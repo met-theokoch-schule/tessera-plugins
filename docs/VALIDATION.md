@@ -33,3 +33,19 @@ Der native Test nutzt `tests/support/esphome/core/component.h`, ausdrücklich ei
 ## Git-Umgebung
 
 Das Zielrepository war leer (kein Remote-Branch `main`). Der aktuelle Arbeitsordner erlaubt Projektdateien, sperrt jedoch `.git`-Schreibzugriffe. Git-Metadaten liegen während dieser Arbeit in `/private/tmp/kidsplayer-target.git`, mit dem Arbeitsbaum `/Users/moritz/Tessera`, Branch `main` und dem vom Auftrag vorgegebenen `origin`. Status/Commit werden daher mit `git --git-dir=/private/tmp/kidsplayer-target.git ...` ausgeführt. Ein normaler erneuter Clone aus GitHub erzeugt außerhalb dieser Einschränkung einen regulären Checkout. Keine zusätzlichen Verzeichnisebenen wurden im Projekt angelegt.
+
+Der erste Implementierungscommit wurde lokal auf `main` erstellt. Pushversuche über HTTPS und SSH scheiterten an fehlenden Zugangsdaten (`could not read Username` beziehungsweise `Permission denied (publickey)`), nicht an einem Code- oder Mergekonflikt. Es wurde kein Force-Push verwendet. Ein ignoriertes `kidsplayer-0.1.0.bundle` im Projektordner sichert den vollständigen lokalen Branch unabhängig vom temporären Git-Verzeichnis.
+
+Nach GitHub-Anmeldung kann aus dem aktuellen Arbeitsbaum mit den vorhandenen Metadaten gepusht werden:
+
+```sh
+git --git-dir=/private/tmp/kidsplayer-target.git push -u origin main
+```
+
+Falls diese temporären Metadaten nicht mehr existieren, in ein neues Verzeichnis wiederherstellen:
+
+```sh
+git clone /Users/moritz/Tessera/kidsplayer-0.1.0.bundle tessera-plugins
+git -C tessera-plugins remote set-url origin https://github.com/met-theokoch-schule/tessera-plugins.git
+git -C tessera-plugins push -u origin main
+```
