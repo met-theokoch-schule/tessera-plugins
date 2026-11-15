@@ -20,10 +20,13 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_pos(header_, 6, 2);
     lv_obj_set_width(header_, w_ - 12);
     lv_label_set_text(header_, "Reihen");
-    int available = std::max(24, h_ - 82);
-    size_ = std::max(24, std::min(w_ * 62 / 100, available));
+    // One-row tiles are also the intermediate step when dragging a 1x1 to 2x2.
+    // Keep the back header and status clear; compact tiles omit the title row.
+    compact_ = h_ < 160;
+    y_ = compact_ ? std::min(32, h_ / 3) : 42;
+    const int available = std::max(8, h_ - y_ - (compact_ ? 24 : 48));
+    size_ = std::max(8, std::min(w_ * 62 / 100, available));
     x_ = (w_ - size_) / 2;
-    y_ = 42;
     for (int slot : {0, 2, 1}) {
       art_[slot] = ui::picture(c.parent);
       int d = slot == 1 ? size_ : size_ * 65 / 100;
@@ -36,6 +39,7 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_width(title_, w_ - 8);
     lv_label_set_long_mode(title_, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(title_, LV_TEXT_ALIGN_CENTER, 0);
+    if (compact_) lv_obj_add_flag(title_, LV_OBJ_FLAG_HIDDEN);
     status_ = ui::text(c.parent, tessera::Font::BODY, theme::MUTED);
     lv_obj_set_pos(status_, 4, h_ - 22);
     lv_obj_set_width(status_, w_ - 8);
@@ -58,7 +62,7 @@ class LibraryTile : public tessera::Tile {
     if (pending_) return;
     auto p = tessera::tap_point();
     if (p.x < 0 || p.y < 0) return;
-    if (p.y < 42 && !category_.empty()) {
+    if (p.y < y_ && !category_.empty()) {
       category_ = tessera::Text(); index_ = saved_; request(false); return;
     }
     if (failed_ || !loaded_) { request(false); return; }
@@ -129,7 +133,7 @@ class LibraryTile : public tessera::Tile {
   lv_obj_t *art_[3] = {}, *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
   int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, index_ = 0, saved_ = 0, total_ = 0;
   uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0;
-  bool playing_ = false, loaded_ = false, failed_ = false, animation_ = true;
+  bool compact_ = false, playing_ = false, loaded_ = false, failed_ = false, animation_ = true;
 };
 void Kidsplayer::setup() { add_tile("library", [this]() { return new LibraryTile(this); }); }
 void Kidsplayer::on_message(JsonObjectConst message) { for (auto *tile : tiles) tile->answer(message); }

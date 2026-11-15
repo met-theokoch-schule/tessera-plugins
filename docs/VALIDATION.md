@@ -49,3 +49,22 @@ git clone /Users/moritz/Tessera/kidsplayer-0.1.0.bundle tessera-plugins
 git -C tessera-plugins remote set-url origin https://github.com/met-theokoch-schule/tessera-plugins.git
 git -C tessera-plugins push -u origin main
 ```
+
+## Resize-Fix 0.1.1
+
+Die Mindestgröße `2x2` führte bei einer initialen `1x1`-Kachel zu fehlenden Zugpunkten: Tessera's `resizeChoices` verändert nur eine Achse und hält die andere konstant. Somit war weder `2x1` noch `1x2` zulässig. Plugin 0.1.1 erlaubt `min: 1x1`; die Firmware berücksichtigt die kurzen Zwischenformate mit einer kompakten Anordnung ohne Titelzeile.
+
+Erfolgreich ausgeführt:
+
+- `kidsplayer/tests/test_resize.mjs` lädt die tatsächlichen Funktionen `spanOf`, `dimensions`, `tileSizeChoices` und `resizeChoices` aus dem untersuchten Tessera-Checkout. Mit leeren Seiten-/Store-Fixtures reproduziert es fehlende Griffe mit dem alten Manifest und prüft beide Vergrößerungswege zu `2x2` sowie das Verkleinern mit dem neuen Manifest.
+- Nativer Test des tatsächlichen Kachelcodes erweitert um die Geometrie in kleinen, breiten, hohen und quadratischen Kacheln, Öffnen und Zurück-Navigation in diesen Formaten; erfolgreich.
+- Offizieller Tessera-Validator für Plugin 0.1.1 mit API 0.24 erfolgreich. New-music-Referenz unverändert.
+
+Editor-Regressionsprüfung (Node.js mit `node:module.stripTypeScriptTypes` und PyYAML):
+
+```sh
+python3 -c 'import json,yaml; print(json.dumps(yaml.safe_load(open("kidsplayer/tessera-plugin.yaml"))["tiles"][0]["sizes"]))' \
+  | node kidsplayer/tests/test_resize.mjs /path/to/core
+```
+
+Kein Test am echten Display und kein Firmwarebuild für diesen Fix. Der HA-Companion bleibt auf Version 0.1.0, da er nicht geändert wurde. Die Aktualisierung betrifft das Pluginmanifest und die Display-Firmware; Installationshinweise stehen am Ende der Kidsplayer-README.

@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.0
+# Kidsplayer 0.1.1
 
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Drei Coverplätze mit Perspektive und optionaler kurzer Gleitbewegung verwenden Tessera-Bildübertragung und Cache. Spiegelung ist in dieser Version zugunsten großer Cover weggelassen.
 
@@ -23,7 +23,7 @@ Voraussetzungen und Installation auf dem Guition
 6. Home-Assistant-Konfiguration prüfen und Home Assistant neu starten. PyYAML und Pillow werden bereits von Home Assistant bereitgestellt; der Companion installiert keinen eigenen MA-Client.
 7. Kopiere den **gesamten Pluginordner `kidsplayer/`** nach `/config/tessera-plugins/kidsplayer/`, neben `/config/esphome/`. Bei abweichendem Tessera-ESPHome-Verzeichnis ist der Ordner `tessera-plugins/` dessen Geschwisterordner. Keine Symlinks verwenden. Das ist Tessera's offizieller lokaler Testplugin-Weg. Ein GitHub-Push allein trägt Kidsplayer noch nicht in den offiziellen Store ein.
 8. In Tessera unter **Plugins** Kidsplayer auswählen, nur das Guition-Testdisplay wählen und installieren. Tessera baut und überträgt dessen Firmware einmal. Diese Entwicklung hat das nicht für dich ausgeführt.
-9. Im Layout eine **Kidsplayer**-Kachel ab **2 × 2** hinzufügen. Für den ersten Guition-Test möglichst den Großteil der 480 × 480-Seite verwenden. Als Player den MA-Mediaplayer auswählen; unter **Bibliotheks-ID** `kinderzimmer_1` eintragen. Speichern und senden.
+9. Im Layout eine **Kidsplayer**-Kachel hinzufügen. Sie beginnt bei **1 × 1** und lässt sich an den Zugpunkten rechts/unten über **2 × 1** oder **1 × 2** auf **2 × 2** vergrößern. Die angrenzenden Rasterfelder müssen frei sein. Für den ersten Guition-Test möglichst den Großteil der 480 × 480-Seite verwenden. Als Player den MA-Mediaplayer auswählen; unter **Bibliotheks-ID** `kinderzimmer_1` eintragen. Speichern und senden.
 10. Bei Verbindungsfehlern prüfen, ob Tessera seine normale administrative HA-Websocket-Verbindung verwendet. `kidsplayer/play` erfordert eine Adminverbindung; die Firmware bekommt weder HA- noch MA-Zugangsdaten.
 
 Plugin-Codeänderungen benötigen einen erneuten Tessera-Build. Änderungen am Companion-Code benötigen einen HA-Neustart. **Änderungen an der Bibliotheksdatei benötigen beides nicht**: Der Companion liest sie beim nächsten Browse/Play erneut und validiert bei geändertem Inhalt atomar. Sichtbare Kacheln aktualisieren etwa alle 30 Sekunden. Ein Tipp bei geändertem Dateistand wird zunächst abgewiesen; Auswahl neu laden und erneut antippen. YAML niemals nur teilweise speichern; möglichst Datei atomar ersetzen.
@@ -112,7 +112,7 @@ Optional wird `music_assistant_user: kind1` als `user` an MA weitergereicht, bei
 6. Prüfe fünf lokale Tracks und eine gemischte Liste über denselben Player.
 7. Trage testweise eine nicht verfügbare URI ein: Fehlermeldung muss erscheinen; kein Ersatzalbum darf gesucht werden. Beachte: Der tatsächliche Player kann bei erst während des Streamings erkannten Fehlern anders reagieren als der Metadaten-Preflight.
 8. Setze zwei Kacheln auf dieselbe Seite und navigiere unabhängig. Ändere YAML ohne Firmwarebau und prüfe die Aktualisierung.
-9. Entferne ein Cover, prüfe Platzhalter und Fehlerrückmeldung; teste lange Titel und Kachelgrößen ab 2 × 2.
+9. Entferne ein Cover, prüfe Platzhalter und Fehlerrückmeldung; teste lange Titel und Kachelgrößen 1 × 1, 2 × 1 und 2 × 2.
 
 ## Fehleranalyse und Grenzen
 
@@ -129,3 +129,11 @@ Optional wird `music_assistant_user: kind1` als `user` an MA weitergereicht, bei
 ## Privacy
 
 Bibliotheken bleiben in Home Assistant; das Display erhält nur die sichtbaren Titel, IDs und Coveradressen. Music Assistant kontaktiert die konfigurierten Medienanbieter. Automatische Cover werden vom durch MA angegebenen Host über HA geladen; dieser Host sieht die IP von Home Assistant. Keine Telemetrie in Kidsplayer.
+
+## Update auf 0.1.1: Zugpunkte
+
+Die bisherige Mindestgröße 2 × 2 blockierte Tessera's achsenweise Vergrößerung einer neu angelegten 1 × 1-Kachel. Ab 0.1.1 ist die Mindestgröße 1 × 1; damit sind auch die Zwischenstufen 2 × 1 und 1 × 2 zulässig. Für eine niedrige Kachel wird die Titelzeile ausgeblendet, damit Cover, Zurück-Navigation und Status Platz haben. Für die komfortable Coverauswahl bleibt 2 × 2 oder größer empfohlen.
+
+Den Pluginordner in `/config/tessera-plugins/kidsplayer/` durch den neuen Stand ersetzen beziehungsweise die verwendete GitHub-Pluginquelle auf den neuen Commit aktualisieren. Danach die Pluginliste im Tessera-Editor neu laden; falls nötig Tessera neu starten, damit das neue Manifest eingelesen wird. Für die angepasste Darstellung Kidsplayer auf dem Testdisplay aktualisieren/neu bauen. Der HA-Companion wurde hierfür nicht geändert.
+
+Die ausgewählte Kachel braucht freien Platz rechts/unten; nach unten vergrößern setzt außerdem Tessera's Unterstützung für höhere Kacheln voraus. Sollte ein Zugpunkt trotz neuer Mindestgröße fehlen, zunächst die Kachel auf eine leere Seite oder in einen freien Bereich setzen.
