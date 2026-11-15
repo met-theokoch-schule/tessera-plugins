@@ -1,0 +1,10 @@
+{
+  "domain": "kidsplayer",
+  "name": "Kidsplayer",
+  "version": "0.1.0",
+  "documentation": "https://github.com/met-theokoch-schule/tessera-plugins/tree/main/kidsplayer",
+  "codeowners": ["@met-theokoch-schule"],
+  "dependencies": ["music_assistant", "http", "websocket_api"],
+  "requirements": [],
+  "iot_class": "local_push"
+}

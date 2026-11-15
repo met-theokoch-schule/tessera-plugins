@@ -1,0 +1,77 @@
+# BEISPIEL: Alle PLACEHOLDER-URIs ersetzen. Keine dieser IDs ist ein reales Medium.
+# Die zwoelf Apple-Tracks muessen aus demselben Album stammen.
+libraries:
+  kinderzimmer_1:
+    version: 1
+    player: media_player.kinderzimmer_1
+    music_assistant_user: kind1
+    display:
+      show_titles: true
+      cover_style: contain
+      animation: true
+    categories:
+    - id: robin_hood
+      title: Robin Hood
+      cover: robin_hood.jpg
+      episodes:
+      - id: robin_hood_01
+        title: Folge 1
+        cover: auto
+        playback:
+          items:
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_01
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_02
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_03
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_04
+      - id: robin_hood_02
+        title: Folge 2
+        cover: auto
+        playback:
+          items:
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_05
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_06
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_07
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_08
+      - id: robin_hood_03
+        title: Folge 3
+        cover: auto
+        playback:
+          items:
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_09
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_10
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_11
+          - uri: apple_music://track/PLACEHOLDER_APPLE_TRACK_12
+    - id: conni
+      title: Conni
+      cover: conni.jpg
+      episodes:
+      - id: conni_album
+        title: Komplettes Album
+        cover: auto
+        playback:
+          items:
+          - uri: apple_music://album/PLACEHOLDER_APPLE_ALBUM_ID
+      - id: conni_lokal
+        title: Lokales Hoerspiel
+        cover: conni_lokal.jpg
+        playback:
+          items:
+          - uri: filesystem_local://track/PLACEHOLDER_LOCAL_TRACK_01
+          - uri: filesystem_local://track/PLACEHOLDER_LOCAL_TRACK_02
+          - uri: filesystem_local://track/PLACEHOLDER_LOCAL_TRACK_03
+          - uri: filesystem_local://track/PLACEHOLDER_LOCAL_TRACK_04
+          - uri: filesystem_local://track/PLACEHOLDER_LOCAL_TRACK_05
+  kinderzimmer_2:
+    version: 1
+    player: media_player.kinderzimmer_2
+    categories:
+    - id: andere_reihe
+      title: Zweite Bibliothek
+      cover: auto
+      episodes:
+      - id: andere_folge
+        title: Eigene Auswahl
+        cover: auto
+        playback:
+          items:
+          - uri: library://album/PLACEHOLDER_LIBRARY_ALBUM_ID

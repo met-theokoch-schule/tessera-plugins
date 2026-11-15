@@ -1,0 +1,20 @@
+Kidsplayer 0.1.0
+Copyright (c) 2026 Kidsplayer contributors
+MIT License; see LICENSE.
+
+New music reference and adapted cover-flow/picture API usage:
+Copyright (c) 2026 Max Gramser
+https://github.com/maxgramser/tessera-plugins
+Commit ae25258d1a8d96ae9d6a521ee313179532a7ea08
+Source directory plugins/new_music copied byte-for-byte to examples/new_music,
+including preview images, store image, translations and documentation.
+The original MIT license is included as LICENSE and kidsplayer/LICENSE.
+
+Official validator tools/check.py copied without modification from that same
+repository and commit, under its MIT license.
+
+Tessera and Home Assistant / Music Assistant sources were inspected for API
+compatibility, not copied into the distributed runtime. Tessera firmware is
+AGPL-3.0; installing this MIT plugin does not change the firmware's license.
+Original project license and notice requirements remain applicable when
+redistributing a compiled Tessera firmware.

@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "Kidsplayer",
+    "summary": "Hoerspielbibliothek fuer Music Assistant",
+    "tile_name": "Kidsplayer",
+    "tile_example": "Reihe auswaehlen",
+    "library": "Bibliotheks-ID",
+    "library_hint": "Benannte Bibliothek in /config/kidsplayer.yaml; Player pro Kachel auswaehlen."
+  },
+  "screen": {}
+}

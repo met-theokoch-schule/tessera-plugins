@@ -1,0 +1,11 @@
+{
+  "app": {
+    "name": "Kidsplayer",
+    "summary": "Hierarchical audio library for Music Assistant",
+    "tile_name": "Kidsplayer",
+    "tile_example": "Choose a series",
+    "library": "Library ID",
+    "library_hint": "Named library in /config/kidsplayer.yaml; player is selected on this tile."
+  },
+  "screen": {}
+}

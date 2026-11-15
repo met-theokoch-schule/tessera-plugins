@@ -1,0 +1,26 @@
+id: kidsplayer
+version: 0.1.0
+api: "0.24"
+icon: album
+maintainer: met-theokoch-schule
+license: MIT
+stage: beta
+topics: [media, fun]
+requires:
+  esphome: 2026.6.2
+boards: any
+flash_kb: 16
+permissions:
+  ha_commands: [kidsplayer/browse, kidsplayer/play]
+tiles:
+  - id: library
+    name: tile_name
+    icon: album
+    sizes: {min: 2x2, max: 4x4}
+    memory: 3600
+    pictures: 3
+    domains: [media_player]
+    has_attributes: [mass_player_type]
+    example: tile_example
+    options:
+      - {id: library, kind: text, label: library, hint: library_hint}
