@@ -1,5 +1,6 @@
 """Preflight every item before touching the queue. No title search, no polling restart."""
 import asyncio
+from .compat import contextual, autoplay_off, replace_ordered
 
 class Playback:
     def __init__(self):
@@ -11,11 +12,11 @@ class Playback:
         async with self.locks.setdefault(key, asyncio.Lock()):
             tracks = []
             for uri in episode.items:
-                item = await client.music.get_item_by_uri(uri, user=user)
+                item = await contextual(client, client.music.get_item_by_uri, uri, user=user)
                 if not getattr(item, 'available', False):
                     raise ValueError('Medium nicht verfuegbar: ' + uri)
                 if str(item.media_type) == 'album':
-                    album = await client.music.get_album_tracks(item.item_id, item.provider, user=user)
+                    album = await contextual(client, client.music.get_album_tracks, item.item_id, item.provider, user=user)
                     if not album:
                         raise ValueError('Album hat keine Tracks: ' + uri)
                     # Never let a server preference reorder a multi-disc album.
@@ -33,14 +34,11 @@ class Playback:
             for track in tracks:
                 if not track.available:
                     raise ValueError('Track nicht verfuegbar: ' + track.uri)
-            queue = await client.player_queues.get_active_queue(player_id, user=user)
+            queue = await contextual(client, client.player_queues.get_active_queue, player_id, user=user)
             if queue is None:
                 raise ValueError('Keine aktive Music-Assistant-Queue')
             # Import only at runtime, so the sequencing logic is testable without HA.
             from music_assistant_models.enums import QueueOption, RepeatMode
-            await client.player_queues.repeat(queue.queue_id, RepeatMode.OFF, user=user)
-            await client.player_queues.autoplay(queue.queue_id, False, user=user)
-            await client.player_queues.play_media(
-                queue.queue_id, media=tracks, option=QueueOption.REPLACE,
-                radio_mode=False, shuffle=False, user=user,
-            )
+            await contextual(client, client.player_queues.repeat, queue.queue_id, RepeatMode.OFF, user=user)
+            await autoplay_off(client, queue.queue_id, user=user)
+            await replace_ordered(client, queue.queue_id, tracks, QueueOption.REPLACE, user=user)

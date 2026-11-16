@@ -166,6 +166,20 @@ int main() {
       assert(visible == std::min(n,7));
     }
   }
+  {
+    LibraryTile tile(&plugin); context.width=400; context.height=380;
+    tile.create(context); tile.on_tick(0);
+    reply(plugin,next_re,"robin",0,3);
+    point={200,120};tile.on_tap();reply(plugin,next_re,"episode",0,3);
+    point={200,120};tile.on_tap();
+    assert(request["ask"] == "kidsplayer/play" && request["data"]["protocol"] == 1);
+    JsonDocument failure; failure["re"]=next_re;failure["ok"]=true;
+    failure["result"]["ok"]=false;failure["result"]["message"]="Track nicht verfuegbar";
+    plugin.on_message(failure.as<JsonObjectConst>());
+    assert(status == "Track nicht verfuegbar"); // application error must precede play-success branch
+    const auto last_re=next_re;
+    now_ms += 31000;tile.on_tick(0);assert(next_re == last_re); // no automatic retry
+  }
   assert(plugin.tiles.empty());  // late replies cannot reference destroyed tiles
-  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing, seven-place flow and destruction passed\n";
+  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing, seven-place flow, application errors and destruction passed\n";
 }

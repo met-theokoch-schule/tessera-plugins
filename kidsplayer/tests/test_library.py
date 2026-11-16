@@ -18,7 +18,15 @@ def load(name):
     spec.loader.exec_module(module)
     return module
 model = load('library')
-Playback = load('playback').Playback
+compat = load('compat')
+# Reuse the same local module for the production relative import.
+playback_spec = importlib.util.spec_from_file_location('test_backend.playback', ROOT / 'backend/custom_components/kidsplayer/playback.py')
+package = types.ModuleType('test_backend'); package.__path__ = []
+sys.modules['test_backend'] = package
+sys.modules['test_backend.compat'] = compat
+playback_module = importlib.util.module_from_spec(playback_spec)
+playback_spec.loader.exec_module(playback_module)
+Playback = playback_module.Playback
 sys.modules['music_assistant_models'] = types.ModuleType('music_assistant_models')
 enums = types.ModuleType('music_assistant_models.enums')
 enums.QueueOption = NS(REPLACE='replace')
@@ -98,7 +106,7 @@ class LibraryTests(unittest.TestCase):
 class PlaybackTests(unittest.IsolatedAsyncioTestCase):
     def client(self):
         q = NS(get_active_queue=AsyncMock(return_value=NS(queue_id='queue')), repeat=AsyncMock(), autoplay=AsyncMock(), play_media=AsyncMock())
-        return NS(music=NS(get_item_by_uri=AsyncMock(), get_album_tracks=AsyncMock()), player_queues=q)
+        return NS(server_info=NS(schema_version=101), music=NS(get_item_by_uri=AsyncMock(), get_album_tracks=AsyncMock()), player_queues=q)
 
     def track(self, uri, disc=1, number=1, available=True):
         return NS(uri=uri, available=available, media_type='track', disc_number=disc, track_number=number)

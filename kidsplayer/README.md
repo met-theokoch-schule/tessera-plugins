@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.3
+# Kidsplayer 0.1.4
 
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive, überlappenden äußeren Nachbarn und der gleichen 320-ms-Slide-Funktion von Tessera. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
@@ -9,7 +9,7 @@ Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Ka
 Voraussetzungen und Installation auf dem Guition
 
 1. Home Assistant mit der **offiziellen** Integration `music_assistant`, einem eingerichteten MA-Server, Apple-Music-/Dateianbieter und einem erreichbaren MA-Lautsprecher. Die alte benutzerdefinierte Integration `mass` wird nicht unterstützt.
-2. Tessera mit Plugin-API **0.24** oder kompatibler neuerer API. Die Analyse verwendet den in `docs/ARCHITECTURE.md` festgehaltenen Core-Commit. Der Companion benutzt die Schnittstellen von `music-assistant-client` **v1.8.0**, den die untersuchte HA-Version selbst mitbringt. Ein älterer Server/Client ohne `autoplay`, `shuffle` oder Benutzerparameter muss aktualisiert werden; es gibt keinen stillen Rückfall auf eine unsichere Teilwiedergabe. MA-Serverberechtigungen müssen die Benutzerzuordnung erlauben.
+2. Tessera mit Plugin-API **0.24** oder kompatibler neuerer API. Ab 0.1.4 unterstützt der Companion die Schnittstellen von **HA 2026.11.1 / music-assistant-client 1.6.0 / MA-Server 2.10.12 (Schema 65)** sowie die zuvor untersuchte Client-1.8-/Schema-101-Schnittstelle. Die installierten Versionen wurden im konkreten Fehlerfall aus HA gelesen, die Kompatibilitätsaufrufe gegen offizielle Quellstände und Mocks geprüft. Dies ersetzt keine erfolgreiche Live-Wiedergabe. Der Companion verwendet den von HA installierten Client und installiert keinen eigenen. MA-Berechtigungen müssen die gewünschte Benutzerzuordnung erlauben.
 3. Kopiere **nur** `backend/custom_components/kidsplayer/` nach `/config/custom_components/kidsplayer/` in Home Assistant. Das ist eine zusätzlich notwendige Custom Integration, kein Tessera-Kernpatch. Sichere deine Konfiguration vor eigener Installation.
 4. Lege `/config/kidsplayer.yaml` nach dem Beispiel unter `examples/libraries.yaml` an. Ersetze alle `PLACEHOLDER`-URIs und Player; entferne `music_assistant_user`, wenn du noch kein entsprechendes MA-Konto eingerichtet hast.
 5. Ergänze einmalig in Home Assistant `configuration.yaml`:
@@ -100,7 +100,7 @@ Kachel A wählt `kinderzimmer_1`, Kachel B `kinderzimmer_2`; beide können auf d
 
 Mit unterschiedlichen Playern spielen beide unabhängig. Wählen zwei Kacheln denselben Player, teilen sie dessen MA-Queue: Die zuletzt gestartete Folge ersetzt die vorherige. Das ist beabsichtigt. Parallel gestartete Aktionen desselben Players werden im Backend serialisiert.
 
-Optional wird `music_assistant_user: kind1` als `user` an MA weitergereicht, bei Metadaten und Wiedergabe. Der Name muss in MA existieren; MA muss Impersonation erlauben. Dies bereitet spätere kontogebundene Medien vor. Audiobookshelf-Integration, Hörfortschritt, Fortsetzen von Hörbüchern und echte Inhaltssperren gehören noch nicht zu 0.1.0. Die Auswahl in Kidsplayer ist keine Zugriffskontrolle für MA.
+Optional wird `music_assistant_user: kind1` als `user` für die Wiedergabe an MA weitergereicht. Auf Schema 65 erfolgen Metadatenabfragen und Queueeinstellungen im Kontext der HA-Systemverbindung, weil diese Methoden dort keine Benutzerzuordnung akzeptieren; der eigentliche Play-Aufruf trägt den gewünschten Benutzer. Auf der untersuchten Schema-101-Schnittstelle wird auch bei den unterstützten Metadaten-/Queuemethoden der Benutzer übergeben. Der Name muss in MA existieren; MA muss Impersonation erlauben. Dies bereitet spätere kontogebundene Medien vor. Audiobookshelf-Integration, Hörfortschritt, Fortsetzen von Hörbüchern und echte Inhaltssperren gehören noch nicht zu 0.1.0. Die Auswahl in Kidsplayer ist keine Zugriffskontrolle für MA.
 
 ## Wiedergabe auf dem Testdisplay abnehmen
 
@@ -163,3 +163,19 @@ Das Backend liefert das Zentrum und die drei Nachbarn je Seite als kleines Fenst
 3. YAML unverändert lassen. Die vorhandenen Reihen/Folgen erscheinen automatisch im größeren Fenster.
 
 Nur das Firmwareupdate genügt für die äußeren Nachbarn nicht, weil der bisherige Companion lediglich drei Objekte lieferte. Die bisherige Mitte-/Links-/Rechts-Antwort bleibt für ältere Kacheln erhalten. Die neue Firmware lässt fehlende äußere Antwortfelder leer.
+
+## Update auf 0.1.4: „Home Assistant refused the command.“
+
+Tessera verdeckt den HA-Fehlertext in dieser allgemeinen Meldung. Im untersuchten Fall läuft HA 2026.11.1 mit dem von HA festgelegten MA-Client 1.6.0 und MA-Server 2.10.12/Schema 65. Kidsplayer hatte fälschlich die neueren Client-1.8-Methoden vorausgesetzt: `get_item_by_uri(..., user=...)`, Benutzerparameter bei Album-/Queueabfragen, `autoplay(...)` und `play_media(..., shuffle=False)` passen nicht zu Client 1.6.0. Schon die erste Metadatenauflösung kann deshalb mit `TypeError` abbrechen. Das Entfernen des YAML-Benutzers hätte diesen Programmfehler nicht behoben, da vorher sogar `user=None` übergeben wurde.
+
+0.1.4 verwendet die passende Kombination von Client- und Serverschnittstelle. Für Schema 65 wird Autoplay über `dont_stop_the_music(..., False)` abgeschaltet; die gesamte Trackliste wird in einem direkten offiziellen `player_queues/play_media`-Protokollaufruf mit `replace`, `shuffle=false`, `radio_mode=false` und optionalem Wiedergabebenutzer übergeben. Das umgeht ausschließlich die fehlenden Parameter des alten Python-Wrappers; es ist keine Titelsuche, neue Audioengine oder Lockerung der Benutzerberechtigung. Für diesen direkten Pfad wird mindestens Schema 65 verlangt. Bei unterstütztem neuerem Client/Server wird weiterhin der typisierte Aufruf verwendet.
+
+**Für den Wiedergabefix genügt zunächst:**
+
+1. Den **gesamten** Ordner `kidsplayer/backend/custom_components/kidsplayer/` nach `/config/custom_components/kidsplayer/` aktualisieren, einschließlich der neuen Datei `compat.py`.
+2. Home Assistant neu starten.
+3. Dieselbe Folge erneut antippen; YAML und Playerzuordnung bleiben unverändert. In der MA-Queue Reihenfolge und vollständige Liste prüfen.
+
+Die vorhandene Display-Firmware 0.1.3 kann mit diesem Companion weiterarbeiten. Optional danach Plugin-Firmware 0.1.4 bauen: Sie fordert mit `protocol: 1` strukturierte Fehler an und zeigt die konkrete Fehlermeldung statt des pauschalen Tessera-Texts. **Companion zuerst aktualisieren**, bevor die neue Firmware verwendet wird. Alte Firmware erhält bei Fehlern weiterhin eine echte Fehlerantwort und meldet keine falsche erfolgreiche Wiedergabe.
+
+Die erste HA-Protokollzeile enthält ab jetzt Fehlerklasse und Meldung; der vollständige Traceback bleibt ebenfalls im HA-Protokoll. Bei verbleibendem Fehler bitte den neuen Eintrag `Kidsplayer-Wiedergabe fehlgeschlagen (...)` prüfen. Die Reparatur wurde gegen Original-Clientmethoden und Mocks getestet; eine erfolgreiche Audioausgabe auf dem echten Player ist erst nach diesem Update bestätigt.

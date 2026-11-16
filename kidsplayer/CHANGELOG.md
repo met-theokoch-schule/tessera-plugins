@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.4
+
+- Fix playback/cover metadata calls for Home Assistant 2026.11.1 with MA client 1.6.0 and server 2.10.12 (schema 65).
+- Use supported contextual calls, disable autoplay through the compatible alias, and send one ordered replace command with shuffle=false on schema 65.
+- Preserve playback user attribution without passing unsupported user arguments to legacy metadata/queue methods.
+- Carry application errors through Tessera for new firmware, retain safe error behavior for old firmware, and include exception detail on the first HA log line.
+- Add strict legacy-signature, actual client-1.6-source, cross-version and error-transport regression tests.
+
 ## 0.1.3
 
 - Remove the three-cover limit; declare seven picture places and page the centre plus three neighbours on each side from the companion.

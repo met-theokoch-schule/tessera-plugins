@@ -17,6 +17,7 @@ from homeassistant.components.music_assistant.helpers import get_music_assistant
 
 from .library import parse, window, ConfigError, MAX_BYTES
 from .playback import Playback
+from .compat import contextual
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = 'kidsplayer'
@@ -61,7 +62,7 @@ class Backend:
     async def cover(self, item, lib, client):
         if item.cover == 'auto':
             ep = item.episodes[0] if hasattr(item, 'episodes') else item
-            media = await client.music.get_item_by_uri(ep.items[0], user=lib.user or None)
+            media = await contextual(client, client.music.get_item_by_uri, ep.items[0], user=lib.user or None)
             source = client.get_media_item_image_url(media)
             if not source:
                 return ''
@@ -146,8 +147,19 @@ class CoverView(HomeAssistantView):
         data = await self.backend.hass.async_add_executor_job(resize)
         return web.Response(body=data, content_type='image/jpeg')
 
+
+def send_failure(connection, msg, code, message):
+    # Tessera's Refused exception replaces HA error messages with a generic text.
+    # New firmware asks for a structured application error in a successful reply.
+    # Old firmware must keep receiving a transport error, never false play success.
+    if msg.get('protocol', 0) >= 1:
+        connection.send_result(msg['id'], {'ok': False, 'error': code, 'message': message[:160]})
+    else:
+        connection.send_error(msg['id'], code, message[:160])
+
 @websocket_api.websocket_command({
     vol.Required('type'): 'kidsplayer/browse',
+    vol.Optional('protocol', default=0): vol.All(int, vol.Range(min=0, max=1)),
     vol.Required('library'): cv.string,
     vol.Optional('player', default=''): cv.string,
     vol.Optional('category', default=''): cv.string,
@@ -158,11 +170,12 @@ async def ws_browse(hass, connection, msg):
     try:
         connection.send_result(msg['id'], await hass.data[DOMAIN].browse(msg))
     except Exception as err:
-        _LOGGER.exception('Kidsplayer-Bibliothek konnte nicht geladen werden')
-        connection.send_error(msg['id'], 'kidsplayer_error', str(err)[:160])
+        _LOGGER.exception('Kidsplayer-Bibliothek fehlgeschlagen (%s): %s', type(err).__name__, err)
+        send_failure(connection, msg, 'kidsplayer_error', str(err) or type(err).__name__)
 
 @websocket_api.websocket_command({
     vol.Required('type'): 'kidsplayer/play',
+    vol.Optional('protocol', default=0): vol.All(int, vol.Range(min=0, max=1)),
     vol.Required('library'): cv.string,
     vol.Required('category'): cv.string,
     vol.Required('episode'): cv.string,
@@ -172,13 +185,13 @@ async def ws_browse(hass, connection, msg):
 @websocket_api.async_response
 async def ws_play(hass, connection, msg):
     if not connection.user.is_admin:
-        connection.send_error(msg['id'], 'unauthorized', 'Admin connection required')
+        send_failure(connection, msg, 'unauthorized', 'Tessera braucht HA-Adminrechte')
         return
     try:
         connection.send_result(msg['id'], await hass.data[DOMAIN].play(msg))
     except Exception as err:
-        _LOGGER.exception('Kidsplayer-Wiedergabe fehlgeschlagen')
-        connection.send_error(msg['id'], 'kidsplayer_error', str(err)[:160])
+        _LOGGER.exception('Kidsplayer-Wiedergabe fehlgeschlagen (%s): %s', type(err).__name__, err)
+        send_failure(connection, msg, 'kidsplayer_error', str(err) or type(err).__name__)
 
 async def async_setup(hass, config):
     backend = Backend(hass, config[DOMAIN])

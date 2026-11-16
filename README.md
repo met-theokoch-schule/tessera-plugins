@@ -1,4 +1,4 @@
-# Tessera Kidsplayer 0.1.3
+# Tessera Kidsplayer 0.1.4
 
 Kindgerechte Hörspielbibliothek für Tessera und Music Assistant: Reihen und Folgen als verschachtelte Cover-Flows innerhalb einer Kachel. Explizite Tracklisten bleiben geordnet; jede Kachel hat ihre eigene Bibliotheks-ID und ihren eigenen Player.
 

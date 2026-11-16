@@ -91,3 +91,18 @@ Erfolgreich ausgeführt:
 - Offizieller Tessera-Validator für 0.1.3 / API 0.24 erfolgreich; Companion-Bytecode kompiliert; Referenzordner unverändert.
 
 Wie im Original werden nicht vollständig passende äußere Cover weggelassen. Eine quadratische Kachel kann deshalb trotz sieben erlaubter Plätze drei sichtbare Cover haben. Es gibt weiterhin keinen Hardware-/Firmwarebuildnachweis; die nativen Tests ersetzen keine Pixel- oder Speicherprüfung auf dem Guition. Beide Teile müssen aktualisiert werden: Companion 0.1.3 plus Display-Firmware 0.1.3. Bibliotheks-YAML bleibt kompatibel.
+
+## Wiedergabe-Kompatibilität 0.1.4
+
+Im verbundenen System **nur lesend** ermittelt: HA 2026.11.1, Tessera 0.4.97, MA-Server 2.10.12. Das Core-Protokoll meldet `Kidsplayer-Wiedergabe fehlgeschlagen`; der MCP-Logzugriff liefert dabei keinen Traceback. Der offizielle HA-Tag 2026.11.1 pinnt MA-Client 1.6.0. Dessen `music.get_item_by_uri`, `get_album_tracks`, `get_active_queue` und `repeat` akzeptieren kein `user`; `autoplay` fehlt und `play_media` akzeptiert kein `shuffle`. Die vorherige Implementierung war damit inkompatibel, unabhängig davon, ob in YAML ein Benutzer gesetzt war. Der offizielle MA-Server-Tag 2.10.12 bietet Schema 65 mit `play_media(shuffle=...)` und dem Alias `dont_stop_the_music`.
+
+32 Python-Tests erfolgreich ausgeführt, einschließlich eines Tests, der die tatsächlichen Methoden aus dem offiziellen Client-Tag v1.6.0 ausführt (externe Modellparser und Netzwerktransport gemockt). Dieser prüft Metadaten ohne nicht unterstützte Parameter und einen einzigen geordneten Play-Protokollaufruf mit explizitem Shuffle aus, Queue-Ersetzung und Wiedergabebenutzer. Weitere Tests prüfen Client 1.8 auf Server-Schema 65, fehlende URI/Providerfehler ohne Wiederholung und die sichere Fehlerbehandlung beider Firmwareprotokolle. Die bisherigen Wiedergabetests A–G bleiben erfolgreich.
+
+```sh
+MA_CLIENT_16_SOURCE=/path/to/music-assistant-client-v1.6.0 \
+python3 -m unittest discover -s kidsplayer/tests -v
+```
+
+Ohne diesen zusätzlichen Checkout wird genau der Original-Clientmethoden-Test übersprungen; alle anderen Tests bleiben lokal ausführbar. Nativer C++-Test erweitert: strukturierter Anwendungsfehler wird vor dem Wiedergabe-Erfolgszweig geprüft und nicht automatisch wiederholt. Offizieller Tessera-Validator und Python-Bytecodekompilierung erfolgreich.
+
+Die Live-Installation wurde nicht verändert, kein echter Play-Aufruf durch den Agenten ausgelöst und keine erfolgreiche Audiowiedergabe behauptet. Der Audiofix erfordert Companion 0.1.4 plus HA-Neustart; die neue Fehleranzeige zusätzlich Firmware 0.1.4. Im alten Firmwareprotokoll kann Tessera den Fehler weiter pauschalisieren; ab Companion 0.1.4 enthält schon die erste HA-Logzeile den Fehlertext.

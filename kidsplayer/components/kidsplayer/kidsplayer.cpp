@@ -106,10 +106,14 @@ class LibraryTile : public tessera::Tile {
       lv_label_set_text(status_, message["error"] | "Fehler");
       failed_ = true; playing_ = false; return;
     }
+    JsonObjectConst data = message["result"];
+    if (data["ok"].is<bool>() && !(data["ok"] | true)) {
+      lv_label_set_text(status_, data["message"] | "Fehler; HA-Protokoll pruefen");
+      failed_ = true; playing_ = false; direction_ = 0; return;
+    }
     if (playing_) {
       lv_label_set_text(status_, "Wiedergabe gestartet"); playing_ = false; failed_ = false; return;
     }
-    JsonObjectConst data = message["result"];
     total_ = data["total"] | 0;
     if (total_ < 1) { failed_ = true; lv_label_set_text(status_, "Bibliothek leer"); return; }
     index_ = data["index"] | 0;
@@ -168,6 +172,7 @@ class LibraryTile : public tessera::Tile {
     JsonDocument doc;
     doc["ask"] = play ? "kidsplayer/play" : "kidsplayer/browse";
     auto d = doc["data"].to<JsonObject>();
+    d["protocol"] = 1;
     d["library"] = plain(library_); d["player"] = plain(player_); d["category"] = plain(category_);
     if (play) { d["episode"] = plain(selected_); d["revision"] = plain(revision_); }
     else d["index"] = index_;
