@@ -4,6 +4,7 @@
 #include <string>
 namespace esphome::kidsplayer {
 namespace ui = tessera::ui;
+static constexpr int SIDE = 3;
 static std::string plain(const tessera::Text &s) { return {s.data(), s.size()}; }
 class LibraryTile : public tessera::Tile {
  public:
@@ -24,28 +25,44 @@ class LibraryTile : public tessera::Tile {
     // Keep the back header and status clear; compact tiles omit the title row.
     compact_ = h_ < 160;
     y_ = compact_ ? std::min(32, h_ / 3) : 42;
-    const int available = std::max(8, h_ - y_ - (compact_ ? 24 : 48));
     mirror_ = !compact_;
-    // New music's centre/side ratio, gap, full-height perspective and pitch.
-    // Reserve the reflection's room so titles never overlap the original cover.
-    const int cover_room = mirror_ ? available * 100 / (100 + tessera::MIRROR_PERCENT) : available;
-    size_ = std::max(8, std::min(w_ / 2, cover_room));
+    // The reference's image-flow geometry, within the area below Kidsplayer's Back header.
+    const int width_ = w_, height_ = h_ - y_, gap_ = ui::px(6);
+    const int text = compact_ ? 18 : ui::line_height(tessera::Font::TITLE) + ui::line_height(tessera::Font::BODY);
+    const int room = std::max(1, height_ - text - gap_);
+    int h = mirror_ ? std::min(room * 100 / (100 + tessera::MIRROR_PERCENT / 2), height_ * 100 / (100 + tessera::MIRROR_PERCENT))
+                    : room;
+    h = std::min(h, width_ / 2);
+    size_ = std::max(8, h);
     frame_h_ = mirror_ ? size_ * (100 + tessera::MIRROR_PERCENT) / 100 : size_;
     x_ = (w_ - size_) / 2;
+    const int w = size_, centre_x_ = x_;
     const int gap = ui::px(10);
-    side_ = std::max(0, std::min(size_ * 55 / 100, x_ - gap));
-    pitch_ = side_ >= size_ / 4 ? size_ / 2 + gap + side_ / 2 : size_ + gap;
-    for (int slot : {0, 2, 1}) {
-      // No full-height placeholder bars while the image atlas is being fetched.
-      art_[slot] = ui::picture(c.parent, tessera::Placeholder::NONE);
-      const int width = slot == 1 ? size_ : side_;
-      const int left = x_ - gap - side_;
-      const int x = slot == 0 ? left : slot == 2 ? w_ - left - side_ : x_;
-      lv_obj_set_pos(art_[slot], x, y_);
-      lv_obj_set_size(art_[slot], width, frame_h_);
+    const int side = std::min(w * 55 / 100, centre_x_ - gap);
+    tessera::List<Slot> frames;
+    if (side >= w / 4) {
+      // BEGIN NEW MUSIC IMAGE FRAMES: copied unchanged from the pinned reference.
+      const int spread = SIDE > 1 ? (centre_x_ - gap - side) / (SIDE - 1) : 0;
+      // Close together, as a stack of records: on a wide tile the flow keeps to the middle.
+      const int stepx = std::max(w / 6, std::min(side * 70 / 100, spread));
+      for (int k = SIDE; k >= 1; --k) {   // the outermost first: a place made later lies over one made earlier
+        const int inner = centre_x_ - gap - side - (k - 1) * stepx;
+        if (inner < 0) continue;
+        frames.push_back({-k, inner, side, nullptr});
+        frames.push_back({k, width_ - inner - side, side, nullptr});
+      }
+      // END NEW MUSIC IMAGE FRAMES
     }
-    title_ = ui::text(c.parent, tessera::Font::BODY, theme::INK);
-    lv_obj_set_pos(title_, 4, y_ + frame_h_ + 2);
+    frames.push_back({0, centre_x_, w, nullptr});
+    pitch_ = side >= w / 4 ? w / 2 + gap + side / 2 : w + gap;
+    for (Slot f : frames) {
+      f.place = ui::picture(c.parent, tessera::Placeholder::NONE);
+      lv_obj_set_pos(f.place, f.x, y_);
+      lv_obj_set_size(f.place, f.w, frame_h_);
+      slots_.push_back(f);
+    }
+    title_ = ui::text(c.parent, compact_ ? tessera::Font::BODY : tessera::Font::TITLE, theme::INK);
+    lv_obj_set_pos(title_, 4, h_ - text);
     lv_obj_set_width(title_, w_ - 8);
     lv_label_set_long_mode(title_, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(title_, LV_TEXT_ALIGN_CENTER, 0);
@@ -99,24 +116,26 @@ class LibraryTile : public tessera::Tile {
     revision_ = tessera::Text(data["revision"] | "");
     selected_ = tessera::Text(data["center"]["id"] | "");
     animation_ = data["animation"] | true;
-    const char *slots[] = {"left", "center", "right"};
+    const char *keys[] = {"left3", "left2", "left", "center", "right", "right2", "right3"};
     const std::string next_cover = data["center"]["cover"] | "";
     // Unlike New music, browsing is asynchronous. Keep the old atlas stationary
     // until the new addresses are available, then slide beside set_picture().
     // A shared album cover (or no cover) creates no new atlas: sliding it could
     // otherwise remain displaced forever, since Tessera resets on a new atlas.
-    if (direction_ && animation_ && loaded_ && !covers_[1].empty() &&
-        !next_cover.empty() && plain(covers_[1]) != next_cover)
+    if (direction_ && animation_ && loaded_ && !covers_[SIDE].empty() &&
+        !next_cover.empty() && plain(covers_[SIDE]) != next_cover)
       ui::slide_pictures(std::max(-w_, std::min(w_, direction_ * pitch_)), 320);
     direction_ = 0;
-    for (int i = 0; i < 3; ++i) {
-      auto item = data[slots[i]];
-      const bool visible = i == 1 || (side_ >= size_ / 4 && (total_ > 2 || (i == 2 && total_ == 2)));
+    for (auto &slot : slots_) {
+      const int i = slot.offset + SIDE;
+      auto item = data[keys[i]];
+      const bool visible = shown(slot.offset) && !item.isNull();
       covers_[i] = tessera::Text(visible ? (item["cover"] | "") : "");
-      ui::set_picture(art_[i], plain(covers_[i]), tessera::Fit::CONTAIN,
-        i == 0 ? tessera::Turn::RIGHT : i == 2 ? tessera::Turn::LEFT : tessera::Turn::NONE, mirror_);
-      if (!visible) lv_obj_add_flag(art_[i], LV_OBJ_FLAG_HIDDEN);
-      else lv_obj_remove_flag(art_[i], LV_OBJ_FLAG_HIDDEN);
+      const tessera::Turn turn = !slot.offset ? tessera::Turn::NONE
+                                  : slot.offset < 0 ? tessera::Turn::RIGHT : tessera::Turn::LEFT;
+      ui::set_picture(slot.place, plain(covers_[i]), tessera::Fit::CONTAIN, turn, mirror_);
+      if (visible) lv_obj_remove_flag(slot.place, LV_OBJ_FLAG_HIDDEN);
+      else lv_obj_add_flag(slot.place, LV_OBJ_FLAG_HIDDEN);
     }
     lv_label_set_text(header_, category_.empty() ? "Reihen" : "< Zurueck");
     lv_label_set_text(title_, (data["show_titles"] | true) ? (data["center"]["title"] | "") : "");
@@ -131,6 +150,15 @@ class LibraryTile : public tessera::Tile {
     ui::set_color(title_, theme::INK); ui::set_color(header_, theme::INK); ui::set_color(status_, theme::MUTED);
   }
  private:
+  struct Slot {
+    int offset = 0, x = 0, w = 0;
+    lv_obj_t *place = nullptr;
+  };
+  // New music's no-duplicate rule, applied to the active category/episode count.
+  bool shown(int offset) const {
+    const int n = total_, far = offset < 0 ? -offset : offset;
+    return 2 * far < n || (2 * far == n && offset > 0);
+  }
   void move(int direction) {
     if (total_ > 1) request(false, direction);
   }
@@ -150,9 +178,10 @@ class LibraryTile : public tessera::Tile {
     if (!pending_) { failed_ = true; loaded_ = true; playing_ = false; }
   }
   Kidsplayer *plugin_;
-  tessera::Text library_, player_, category_, selected_, revision_, covers_[3];
-  lv_obj_t *art_[3] = {}, *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
-  int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, frame_h_ = 0, side_ = 0, pitch_ = 0, direction_ = 0, index_ = 0, saved_ = 0, total_ = 0;
+  tessera::Text library_, player_, category_, selected_, revision_, covers_[2 * SIDE + 1];
+  tessera::List<Slot> slots_;
+  lv_obj_t *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
+  int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, frame_h_ = 0, pitch_ = 0, direction_ = 0, index_ = 0, saved_ = 0, total_ = 0;
   uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0;
   bool mirror_ = false, compact_ = false, playing_ = false, loaded_ = false, failed_ = false, animation_ = true;
 };

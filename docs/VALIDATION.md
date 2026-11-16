@@ -78,3 +78,16 @@ Korrigiert: Proportionen und Pitch der Referenz, Spiegelung in nicht kompakten K
 Der ausgeführte native C++-Test prüft nun zusätzlich die Bewegung erst nach einer um fünf Sekunden verzögerten Backendantwort, beide Richtungen, tatsächlichen Mittenabstand und 320 ms, gleiche Albumcover ohne Slide, deaktivierte Animation, Fehlerantwort ohne Slide, Spiegelungsflags und volle Nachbarhöhe sowie Ein-/Zwei-Eintrag-Ansichten. Geometrie- und Navigationstests für kleine Kacheln bestehen weiter. Tessera's offizieller Validator akzeptiert Version 0.1.2 für API 0.24.
 
 Keine Hardware-/Pixelabnahme: Die Test-Doubles zeichnen keine Animationsframes. Ob der tatsächliche Atlaswechsel auf dem Guition angenehm wirkt, bleibt im realen Betrieb zu prüfen. Keine Änderung am Companion und keine neue Bibliothekskonfiguration erforderlich.
+
+## Original-Coverplätze 0.1.3
+
+Die manuell eingeführte Begrenzung auf drei Plätze wurde entfernt. Die Bildplatz-Schleife (`spread`, `stepx`, `k=SIDE..1`, `inner`, beide `frames.push_back`) ist jetzt unverändert aus dem festgelegten New-music-Code übernommen. Ein automatischer Textvergleich gegen die unveränderte Referenz prüft genau diesen Block. Mittenplatz, Pitch und Duplikatregel folgen ebenfalls der Referenz. Die Höhenberechnung normaler Kacheln verwendet die Referenzformel im Bereich unter der Zurück-Zeile; kompakte Zwischenformate und `contain` bleiben Anpassungen an Kidsplayer.
+
+Erfolgreich ausgeführt:
+
+- 23 Python-Tests, darunter alle bisherigen Wiedergabe-/Konfigurationstests sowie Vergleich des unveränderten Originalblocks, tatsächliche Backend-Browsefunktion mit sieben Einträgen, zyklisches Fenster und Auflösung jedes Bildes nur einmal bei kleinen Bibliotheken.
+- Sieben Objekte mit maximal langen Darstellungstexten/IDs und den echten kurzen Coveradressen passen unter Tessera's 3200-Byte-Antwortbudget. Keine Playback-URIs in der Antwort.
+- Nativer C++-Test der tatsächlichen Kachel zeigt sieben angelegte Coverplätze in einer breiten/niedrigen Kachel, Außen-nach-innen-Reihenfolge und keine Duplikate für ein bis acht Bibliotheksobjekte. Vorhandene Tests für kompakte Kacheln, getrennte Instanzen, Animation und Fehler bestehen weiter.
+- Offizieller Tessera-Validator für 0.1.3 / API 0.24 erfolgreich; Companion-Bytecode kompiliert; Referenzordner unverändert.
+
+Wie im Original werden nicht vollständig passende äußere Cover weggelassen. Eine quadratische Kachel kann deshalb trotz sieben erlaubter Plätze drei sichtbare Cover haben. Es gibt weiterhin keinen Hardware-/Firmwarebuildnachweis; die nativen Tests ersetzen keine Pixel- oder Speicherprüfung auf dem Guition. Beide Teile müssen aktualisiert werden: Companion 0.1.3 plus Display-Firmware 0.1.3. Bibliotheks-YAML bleibt kompatibel.

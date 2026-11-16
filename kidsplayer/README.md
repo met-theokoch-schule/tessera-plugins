@@ -1,6 +1,6 @@
-# Kidsplayer 0.1.2
+# Kidsplayer 0.1.3
 
-Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Drei Coverplätze verwenden New music's Proportionen, Perspektive, Abstand und die gleiche 320-ms-Slide-Funktion von Tessera. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
+Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive, überlappenden äußeren Nachbarn und der gleichen 320-ms-Slide-Funktion von Tessera. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
 **Status:** Beta-Implementierung mit Mocktests und ausgeführten nativen C++-Navigationstests. Home Assistant und Hardware wurden nicht gestartet. Die Installationsschritte sind für einen anschließenden Test beschrieben, nicht bereits auf deinem Display ausgeführt.
 
@@ -92,7 +92,7 @@ Die offizielle HA-Aktion `music_assistant.play_media` unterstützt Listen. Ihr u
 
 `cover: robin_hood.jpg` liest `/media/hoerspielcover/robin_hood.jpg`. Relative Unterordner sind erlaubt. Ein ursprünglich gewünschtes `covers/robin_hood.jpg` bedeutet entsprechend `/media/hoerspielcover/covers/robin_hood.jpg`. Absolute Pfade und Verzeichnisausbruch sind gesperrt; auch aufgelöste Symlinks müssen im Coververzeichnis bleiben. Keine öffentlichen `/local/`-Freigaben notwendig.
 
-Der Companion stellt die Grafik unter einer kurzen, **authentifizierten** HA-Bildadresse bereit. Tessera lädt sie mit seinen vorhandenen Zugangsdaten, skaliert sie in die drei Coverplätze und cached das Ergebnis. Das Bild behält sein Seitenverhältnis (`contain`), ohne Abdunklung oder Text über dem Motiv. Download maximal 2 MiB, Ausgangsbild höchstens 360 × 360 Pixel. Der Originalcoverinhalt verlässt nur den bestehenden HA/Tessera-Bildweg; keine Schlüssel gehen an das Display. Ein bestehendes lokales Bild nach Austausch durch eine kleine YAML-Änderung invalidieren; ansonsten kann Tessera es bis zu sechs Stunden cachen.
+Der Companion stellt die Grafik unter einer kurzen, **authentifizierten** HA-Bildadresse bereit. Tessera lädt sie mit seinen vorhandenen Zugangsdaten, skaliert sie in bis zu sieben Coverplätze und cached das Ergebnis. Das Bild behält sein Seitenverhältnis (`contain`), ohne Abdunklung oder Text über dem Motiv. Download maximal 2 MiB, Ausgangsbild höchstens 360 × 360 Pixel. Der Originalcoverinhalt verlässt nur den bestehenden HA/Tessera-Bildweg; keine Schlüssel gehen an das Display. Ein bestehendes lokales Bild nach Austausch durch eine kleine YAML-Änderung invalidieren; ansonsten kann Tessera es bis zu sechs Stunden cachen.
 
 ## Mehrere Kacheln, Player und Benutzer
 
@@ -140,10 +140,26 @@ Die ausgewählte Kachel braucht freien Platz rechts/unten; nach unten vergröße
 
 ## Update auf 0.1.2: Coverwechsel
 
-Der ursprüngliche Kidsplayer-Flow war eine vereinfachte Anpassung von New music, keine unveränderte Übernahme. Er verschob kleinere Nachbarcover um eine pauschale halbe Coverbreite in 220 ms und startete bereits vor der asynchronen Backendantwort. 0.1.2 übernimmt die Proportionen der Referenz: Mittelcover maximal halbe Kachelbreite, Nachbarn bis zu 55 % dieser Breite bei voller Höhe, Abstand `ui::px(10)`, Bewegung um den tatsächlichen Mittenabstand in 320 ms und Spiegelung auf höheren Kacheln. Die drei sichtbaren Plätze bleiben erhalten; New music kann bis zu sieben zeigen. Das Mittelcover verwendet weiterhin `contain`, damit keine Motive abgeschnitten werden. Die Titel stehen unterhalb der Reflexion.
+Der ursprüngliche Kidsplayer-Flow war eine vereinfachte Anpassung von New music, keine unveränderte Übernahme. Er verschob kleinere Nachbarcover um eine pauschale halbe Coverbreite in 220 ms und startete bereits vor der asynchronen Backendantwort. 0.1.2 übernimmt die Proportionen der Referenz: Mittelcover maximal halbe Kachelbreite, Nachbarn bis zu 55 % dieser Breite bei voller Höhe, Abstand `ui::px(10)`, Bewegung um den tatsächlichen Mittenabstand in 320 ms und Spiegelung auf höheren Kacheln. Bis einschließlich 0.1.2 blieben drei sichtbare Plätze erhalten; diese Beschränkung ist ab 0.1.3 aufgehoben. Das Mittelcover verwendet weiterhin `contain`, damit keine Motive abgeschnitten werden. In 0.1.2 standen die Titel unterhalb der Reflexion; ab 0.1.3 verwendet die normale Kachel die Höhenberechnung der Referenz und lässt die Reflexion unter den Textzeilen auslaufen.
 
 Während einer Backendanfrage bleiben die bisherigen Cover an ihrem Platz. Erst mit den neuen Adressen werden Slide und Bildwechsel zusammen ausgelöst. Bei gleichem Mittelcover – insbesondere mehreren Folgen desselben Apple-Albums –, fehlendem Bild, Fehlerantwort oder `display.animation: false` entfällt die Bewegung. Tessera setzt einen Slide erst beim Eintreffen eines neuen Bildatlas zurück; ohne geänderte Bildquelle würde ein Slide sonst dauerhaft verschoben bleiben können. Zwei Einträge zeigen nur einen Nachbarn, ein Eintrag keinen.
 
 Das bleibt Tessera's bestehender Slide eines Bildatlas mit anschließendem Wechsel, keine kontinuierliche 3D-Drehung einzelner Covers. Den tatsächlichen Eindruck bei Cachetreffern, langsamen Downloads und auf dem Guition muss der Hardwaretest bestätigen. Die nativen Tests prüfen Aufrufreihenfolge, Geometrie und Parameter, keine gerenderten Animationsframes.
 
 Zum Anwenden das Plugin auf 0.1.2 aktualisieren und die Display-Firmware neu bauen. Der HA-Companion bleibt unverändert; Bibliotheksdateien müssen nicht angepasst werden.
+
+## Update auf 0.1.3: Originalanordnung mit bis zu sieben Covern
+
+Die Beschränkung auf drei Bildplätze war eine Vereinfachung in Kidsplayer, keine Tessera-Grenze. 0.1.3 übernimmt die Bildplatz-Schleife aus dem festgelegten New-music-Commit unverändert: bis zu drei Nachbarn je Seite, außen zuerst gezeichnet, nach innen überlappend, und nur vollständig in die Kachel passende Nachbarn. Ein automatischer Quellvergleich schützt diesen übernommenen Block vor versehentlichen Abweichungen. Die normale Kachel verwendet auch die Höhenberechnung der Referenz, innerhalb der Fläche unter Kidsplayer's Zurück-Zeile. `contain`, kompakte Zwischenformate und die hierarchische Bedienung bleiben Kidsplayer-Anpassungen.
+
+**Sieben Plätze bedeuten nicht immer sieben sichtbare Cover.** Wie im Original können bei einem großen Mittelcover in einer quadratischen Kachel nur die ersten Nachbarn passen, also drei Cover. Eine breite, niedrigere Kachel kann alle sieben darstellen. Weniger Bibliothekseinträge werden nicht dupliziert. Es wird keine zusätzliche Verkleinerung erzwungen, um immer sieben zu zeigen; das würde erneut vom Original abweichen.
+
+Das Backend liefert das Zentrum und die drei Nachbarn je Seite als kleines Fenster. Es überträgt weiterhin keine Tracklisten oder gesamte Bibliothek an den ESP32. Mehrfach auftretende Fensterobjekte in einer kleinen Bibliothek werden pro Browse nur einmal für das Cover aufgelöst. Die Manifestdeklaration umfasst jetzt sieben Bildplätze und 5600 Bytes Tile-Memory; Bildatlas-Speicher zählt Tessera zusätzlich. Der echte RAMverbrauch muss auf dem Display geprüft werden.
+
+**Für 0.1.3 beide Teile aktualisieren:**
+
+1. `backend/custom_components/kidsplayer/` erneut nach `/config/custom_components/kidsplayer/` kopieren und Home Assistant neu starten.
+2. Plugin auf 0.1.3 aktualisieren und die Display-Firmware neu bauen.
+3. YAML unverändert lassen. Die vorhandenen Reihen/Folgen erscheinen automatisch im größeren Fenster.
+
+Nur das Firmwareupdate genügt für die äußeren Nachbarn nicht, weil der bisherige Companion lediglich drei Objekte lieferte. Die bisherige Mitte-/Links-/Rechts-Antwort bleibt für ältere Kacheln erhalten. Die neue Firmware lässt fehlende äußere Antwortfelder leer.

@@ -11,11 +11,12 @@ static std::string status;
 static int slides=0, slide_dx=0;
 static uint32_t slide_ms=0;
 struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source; };
-static Object objects[100];
+static Object objects[1000];
 static Object &object(lv_obj_t *p) { return *reinterpret_cast<Object *>(p); }
 static int used = 0;
 namespace esphome { uint32_t millis() { return now_ms; } }
 extern "C" {
+int32_t lv_font_get_line_height(const lv_font_t *font) { return font->line_height; }
 void lv_obj_set_pos(lv_obj_t *p, int32_t x, int32_t y) { object(p).x=x; object(p).y=y; }
 void lv_obj_set_size(lv_obj_t *p, int32_t w, int32_t h) { object(p).width=w; object(p).height=h; }
 void lv_obj_set_width(lv_obj_t *p, int32_t w) { object(p).width=w; }
@@ -31,6 +32,7 @@ void Plugin::add_tile(const char *, std::function<Tile *()>) {}
 Point tap_point() { return point; }
 uint32_t send(const Plugin *, JsonObjectConst data) { request.set(data); return ++next_re; }
 namespace ui {
+const lv_font_t *font(Font) { static lv_font_t face{}; face.line_height=20; return &face; }
 lv_obj_t *text(lv_obj_t *, Font, theme::Role) { return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
 lv_obj_t *picture(lv_obj_t *, Placeholder p) { objects[used].no_placeholder = p == Placeholder::NONE; return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
 void set_picture(lv_obj_t *p, const std::string &url, Fit, Turn turn, bool mirror) { object(p).source=url; object(p).turn=turn; object(p).mirror=mirror; }
@@ -45,7 +47,7 @@ static void reply(esphome::kidsplayer::Kidsplayer &plugin, uint32_t re, const ch
   result["total"] = total; result["index"] = index; result["revision"] = "rev1";
   result["center"]["id"] = id;
   result["animation"] = animate;
-  for (auto slot : {"left", "center", "right"}) result[slot]["cover"] = cover;
+  for (auto slot : {"left3", "left2", "left", "center", "right", "right2", "right3"}) result[slot]["cover"] = cover;
   plugin.on_message(doc.as<JsonObjectConst>());
 }
 int main() {
@@ -137,6 +139,33 @@ int main() {
     const auto last_re=next_re;
     point={399,120}; tile.on_tap(); assert(next_re == last_re);
   }
+  {
+    // A wide/short tile fits all seven places by the original New music rules.
+    const int first = used;
+    LibraryTile tile(&plugin); context.width=600; context.height=100;
+    tile.create(context);
+    const int end = used;
+    assert(end - first == 10); // header + seven pictures + title + status
+    // Created outermost first, centre last: nearer covers layer over outer ones.
+    const int offset_order[] = {-3, 3, -2, 2, -1, 1, 0};
+    for (int n=1; n<=8; ++n) {
+      if (n == 1) tile.on_tick(0);
+      if (n > 1) { now_ms += 31000; tile.on_tick(0); }
+      reply(plugin, next_re, "center", 0, n, "/art");
+      int visible=0;
+      for (int i=0; i<7; ++i) {
+        auto &o=objects[first+1+i];
+        const int offset=offset_order[i], far=std::abs(offset);
+        const bool expected = 2*far < n || (2*far == n && offset > 0);
+        assert(o.hidden != expected);
+        if (!o.hidden) ++visible;
+        assert(o.x >= 0 && o.x+o.width <= context.width);
+        if (offset < 0) assert(o.turn == tessera::Turn::RIGHT);
+        if (offset > 0) assert(o.turn == tessera::Turn::LEFT);
+      }
+      assert(visible == std::min(n,7));
+    }
+  }
   assert(plugin.tiles.empty());  // late replies cannot reference destroyed tiles
-  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing and destruction passed\n";
+  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing, seven-place flow and destruction passed\n";
 }

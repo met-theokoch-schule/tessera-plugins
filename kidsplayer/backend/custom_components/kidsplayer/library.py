@@ -129,10 +129,10 @@ def parse(source):
         result[name] = Library(player, user, display.get('show_titles', True), display.get('animation', True), tuple(categories))
     return result
 
-def window(lib, category='', index=0):
+def window(lib, category='', index=0, radius=1):
     cat = next((c for c in lib.categories if c.id == category), None)
     if category and cat is None:
         raise ConfigError('Category no longer exists; go back')
     items = cat.episodes if cat else lib.categories
     index %= len(items)
-    return index, len(items), [items[(index + delta) % len(items)] for delta in (-1, 0, 1)]
+    return index, len(items), [items[(index + delta) % len(items)] for delta in range(-radius, radius + 1)]

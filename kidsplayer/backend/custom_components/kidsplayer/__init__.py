@@ -80,12 +80,15 @@ class Backend:
         libs = await self.load()
         lib = libs[msg['library']]
         client, _ = self.client(msg.get('player') or lib.player)
-        index, total, items = window(lib, msg.get('category', ''), msg.get('index', 0))
+        index, total, items = window(lib, msg.get('category', ''), msg.get('index', 0), radius=3)
         result = dict(index=index, total=total, revision=self.digest[:16],
                       show_titles=lib.show_titles, animation=lib.animation)
-        for slot, item in zip(('left', 'center', 'right'), items):
+        resolved_covers = {}
+        for slot, item in zip(('left3', 'left2', 'left', 'center', 'right', 'right2', 'right3'), items):
             try:
-                picture = await self.cover(item, lib, client)
+                if item.id not in resolved_covers:
+                    resolved_covers[item.id] = await self.cover(item, lib, client)
+                picture = resolved_covers[item.id]
             except Exception:
                 picture = ''
                 _LOGGER.warning('Cover nicht verfuegbar: %s', item.id)

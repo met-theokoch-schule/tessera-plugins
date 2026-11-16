@@ -1,4 +1,6 @@
 import asyncio
+import ast
+import json
 import importlib.util
 from pathlib import Path
 import sys
@@ -160,5 +162,54 @@ class PlaybackTests(unittest.IsolatedAsyncioTestCase):
         client.music.get_album_tracks.return_value=[]
         with self.assertRaises(ValueError): await Playback().start(client,'player',NS(items=['album']))
         client.player_queues.play_media.assert_not_awaited()
+
+class SevenCoverTests(unittest.IsolatedAsyncioTestCase):
+    def libraries(self, count):
+        data=config()
+        template=data['libraries']['child']['categories'][0]
+        data['libraries']['child']['categories'] = [dict(template, id='series_%s'%i) for i in range(count)]
+        return parse(data)
+
+    async def test_actual_backend_seven_entries_and_wire_budget(self):
+        # Execute the actual Backend.browse method without bootstrapping Home Assistant.
+        source=ast.parse((ROOT/'backend/custom_components/kidsplayer/__init__.py').read_text())
+        backend=next(n for n in source.body if isinstance(n,ast.ClassDef) and n.name=='Backend')
+        method=next(n for n in backend.body if isinstance(n,ast.AsyncFunctionDef) and n.name=='browse')
+        scope={'window':model.window}
+        exec(compile(ast.Module(body=[method],type_ignores=[]), '<Backend.browse>', 'exec'),scope)
+        fixture=NS(load=AsyncMock(return_value=self.libraries(9)), client=lambda player: ('client','player'),
+                   digest='f'*64,cover=AsyncMock(return_value='/api/image/serve/kp_'+'a'*20))
+        result=await scope['browse'](fixture,{'library':'child','index':0})
+        keys=('left3','left2','left','center','right','right2','right3')
+        self.assertEqual([result[key]['id'] for key in keys],['series_%s'%i for i in (6,7,8,0,1,2,3)])
+        self.assertEqual(fixture.cover.await_count,7)
+        # Account for Tessera's 48-byte text cap: even max title/ID/cover fits 3200 bytes.
+        for key in keys:
+            result[key].update(title='x'*48,id='x'*32)
+        self.assertLess(len(json.dumps(result).encode()),3200)
+        self.assertNotIn('playback',json.dumps(result))
+        self.assertNotIn('://track/',json.dumps(result))
+
+    async def test_small_library_resolves_each_cover_once(self):
+        source=ast.parse((ROOT/'backend/custom_components/kidsplayer/__init__.py').read_text())
+        backend=next(n for n in source.body if isinstance(n,ast.ClassDef) and n.name=='Backend')
+        method=next(n for n in backend.body if isinstance(n,ast.AsyncFunctionDef) and n.name=='browse')
+        scope={'window':model.window}
+        exec(compile(ast.Module(body=[method],type_ignores=[]), '<Backend.browse>', 'exec'),scope)
+        for count in (1,2,3):
+            fixture=NS(load=AsyncMock(return_value=self.libraries(count)),client=lambda player: ('client','player'),
+                       digest='f'*64,cover=AsyncMock(return_value='/cover'))
+            await scope['browse'](fixture,{'library':'child'})
+            self.assertEqual(fixture.cover.await_count,count)
+
+    def test_reference_frame_algorithm_unchanged(self):
+        reference=(ROOT.parent/'examples/new_music/components/new_music/new_music.cpp').read_text()
+        actual=(ROOT/'components/kidsplayer/kidsplayer.cpp').read_text()
+        # This is deliberately an equality check of the reused reference block.
+        start=reference.index('      const int spread =')
+        end=reference.index('\n    }\n    frames.push_back',start)
+        copied=actual.split('// BEGIN NEW MUSIC IMAGE FRAMES: copied unchanged from the pinned reference.\n',1)[1]
+        copied=copied.split('      // END NEW MUSIC IMAGE FRAMES',1)[0].rstrip()
+        self.assertEqual(copied,reference[start:end])
 
 if __name__ == '__main__': unittest.main()

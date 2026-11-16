@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3
+
+- Remove the three-cover limit; declare seven picture places and page the centre plus three neighbours on each side from the companion.
+- Reuse the pinned New music image-frame loop unchanged, including outermost-first layering, spacing, clipping and no-duplicate rules.
+- Use the reference height calculation below the Back header; keep compact layouts and contain fit for original cover motifs.
+- Resolve repeated neighbours once per browse; retain bounded transport and per-tile state.
+- Test the actual reference block equality, seven-place rendering, wraparound, duplicate suppression and seven-cover response size.
+
+- Update both the plugin firmware and Home Assistant companion for this release; library YAML is unchanged.
+
 ## 0.1.2
 
 - Restore New music's full-height perspective, centre/side proportions, physical gap, reflection and 320 ms slide distance based on actual frame spacing (three visible places).
