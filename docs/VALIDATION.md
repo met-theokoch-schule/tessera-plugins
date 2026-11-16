@@ -68,3 +68,13 @@ python3 -c 'import json,yaml; print(json.dumps(yaml.safe_load(open("kidsplayer/t
 ```
 
 Kein Test am echten Display und kein Firmwarebuild für diesen Fix. Der HA-Companion bleibt auf Version 0.1.0, da er nicht geändert wurde. Die Aktualisierung betrifft das Pluginmanifest und die Display-Firmware; Installationshinweise stehen am Ende der Kidsplayer-README.
+
+## Coverwechsel 0.1.2
+
+Direkter Vergleich mit der unveränderten Referenz: Kidsplayer hatte nur Tessera's Picture-/Slide-Primitive verwendet, aber Geometrie (kleine quadratische Nachbarn statt schmaler voller Höhe), Distanz, Dauer (220 statt 320 ms) und Spiegelung vereinfacht. Außerdem startete der Slide vor der Backendantwort. Das konnte bei langsamen Antworten zu verschoben wartenden alten Bildern führen. Derselbe Mittelcover-URL kann bei Folgen desselben Albums keinen neuen Atlas erzeugen; Tessera's Slide-Reset hängt jedoch von einem neuen Atlas ab.
+
+Korrigiert: Proportionen und Pitch der Referenz, Spiegelung in nicht kompakten Kacheln, keine Platzhalterbalken, kein doppeltes Nachbarcover bei zwei Einträgen. Slide nur mit den neuen Adressen in der erfolgreichen Browseantwort, bei unterschiedlicher nicht leerer Mittelcoveradresse. Kein Slide bei Fehlern, identischen/fehlenden Mittelbildern oder deaktivierter Animation. Weiterhin drei statt bis zu sieben Bildplätze und `contain` für das unbeschnittene Mittelcover.
+
+Der ausgeführte native C++-Test prüft nun zusätzlich die Bewegung erst nach einer um fünf Sekunden verzögerten Backendantwort, beide Richtungen, tatsächlichen Mittenabstand und 320 ms, gleiche Albumcover ohne Slide, deaktivierte Animation, Fehlerantwort ohne Slide, Spiegelungsflags und volle Nachbarhöhe sowie Ein-/Zwei-Eintrag-Ansichten. Geometrie- und Navigationstests für kleine Kacheln bestehen weiter. Tessera's offizieller Validator akzeptiert Version 0.1.2 für API 0.24.
+
+Keine Hardware-/Pixelabnahme: Die Test-Doubles zeichnen keine Animationsframes. Ob der tatsächliche Atlaswechsel auf dem Guition angenehm wirkt, bleibt im realen Betrieb zu prüfen. Keine Änderung am Companion und keine neue Bibliothekskonfiguration erforderlich.

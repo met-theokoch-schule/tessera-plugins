@@ -1,6 +1,6 @@
-# Kidsplayer 0.1.1
+# Kidsplayer 0.1.2
 
-Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Drei Coverplätze mit Perspektive und optionaler kurzer Gleitbewegung verwenden Tessera-Bildübertragung und Cache. Spiegelung ist in dieser Version zugunsten großer Cover weggelassen.
+Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Drei Coverplätze verwenden New music's Proportionen, Perspektive, Abstand und die gleiche 320-ms-Slide-Funktion von Tessera. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
 **Status:** Beta-Implementierung mit Mocktests und ausgeführten nativen C++-Navigationstests. Home Assistant und Hardware wurden nicht gestartet. Die Installationsschritte sind für einen anschließenden Test beschrieben, nicht bereits auf deinem Display ausgeführt.
 
@@ -123,7 +123,7 @@ Optional wird `music_assistant_user: kind1` als `user` an MA weitergereicht, bei
 - Kein Cover: Leserechte, Größe, Bildformat und relativen Pfad prüfen. Bei Netzwerkcovern folgt der Companion keinen HTTP-Redirects.
 - Änderungen werden nicht übernommen: Datei vollständig speichern, 30 Sekunden warten oder nach einem Fehler erneut tippen. Gelöschte Kategorie mit „Zurueck“ verlassen.
 - Fehler nach Start, Provider-Fallback, Gruppen-/Syncplayer, echte Streamverfügbarkeit und Benutzerfortschritt sind bislang nicht am echten Server geprüft. Keine Aussage über eine bereits erfolgte Hardwareabnahme.
-- Keine vollständige grafische Vorschau der verschachtelten Bibliothek im Tessera-Editor, keine Swipe-Gesten, kein persistenter Navigationszustand, keine Reflexion und keine Bibliotheks-YAML im Inspector. Firmwaretexte sind momentan deutsch in ASCII-Schreibweise.
+- Keine vollständige grafische Vorschau der verschachtelten Bibliothek im Tessera-Editor, keine Swipe-Gesten, kein persistenter Navigationszustand und keine Bibliotheks-YAML im Inspector. Firmwaretexte sind momentan deutsch in ASCII-Schreibweise.
 - Album-Tracknummern (`album_uri`, `tracks`, `track_range`) sind **noch nicht implementiert** und werden als unbekannte Felder abgewiesen. Die MA-Albumtrack-API liefert die notwendigen URIs und Disc-/Tracknummern; eine spätere Erweiterung muss Disc explizit behandeln, fehlende Nummern verweigern und Metadatenänderungen berücksichtigen.
 
 ## Privacy
@@ -137,3 +137,13 @@ Die bisherige Mindestgröße 2 × 2 blockierte Tessera's achsenweise Vergrößer
 Den Pluginordner in `/config/tessera-plugins/kidsplayer/` durch den neuen Stand ersetzen beziehungsweise die verwendete GitHub-Pluginquelle auf den neuen Commit aktualisieren. Danach die Pluginliste im Tessera-Editor neu laden; falls nötig Tessera neu starten, damit das neue Manifest eingelesen wird. Für die angepasste Darstellung Kidsplayer auf dem Testdisplay aktualisieren/neu bauen. Der HA-Companion wurde hierfür nicht geändert.
 
 Die ausgewählte Kachel braucht freien Platz rechts/unten; nach unten vergrößern setzt außerdem Tessera's Unterstützung für höhere Kacheln voraus. Sollte ein Zugpunkt trotz neuer Mindestgröße fehlen, zunächst die Kachel auf eine leere Seite oder in einen freien Bereich setzen.
+
+## Update auf 0.1.2: Coverwechsel
+
+Der ursprüngliche Kidsplayer-Flow war eine vereinfachte Anpassung von New music, keine unveränderte Übernahme. Er verschob kleinere Nachbarcover um eine pauschale halbe Coverbreite in 220 ms und startete bereits vor der asynchronen Backendantwort. 0.1.2 übernimmt die Proportionen der Referenz: Mittelcover maximal halbe Kachelbreite, Nachbarn bis zu 55 % dieser Breite bei voller Höhe, Abstand `ui::px(10)`, Bewegung um den tatsächlichen Mittenabstand in 320 ms und Spiegelung auf höheren Kacheln. Die drei sichtbaren Plätze bleiben erhalten; New music kann bis zu sieben zeigen. Das Mittelcover verwendet weiterhin `contain`, damit keine Motive abgeschnitten werden. Die Titel stehen unterhalb der Reflexion.
+
+Während einer Backendanfrage bleiben die bisherigen Cover an ihrem Platz. Erst mit den neuen Adressen werden Slide und Bildwechsel zusammen ausgelöst. Bei gleichem Mittelcover – insbesondere mehreren Folgen desselben Apple-Albums –, fehlendem Bild, Fehlerantwort oder `display.animation: false` entfällt die Bewegung. Tessera setzt einen Slide erst beim Eintreffen eines neuen Bildatlas zurück; ohne geänderte Bildquelle würde ein Slide sonst dauerhaft verschoben bleiben können. Zwei Einträge zeigen nur einen Nachbarn, ein Eintrag keinen.
+
+Das bleibt Tessera's bestehender Slide eines Bildatlas mit anschließendem Wechsel, keine kontinuierliche 3D-Drehung einzelner Covers. Den tatsächlichen Eindruck bei Cachetreffern, langsamen Downloads und auf dem Guition muss der Hardwaretest bestätigen. Die nativen Tests prüfen Aufrufreihenfolge, Geometrie und Parameter, keine gerenderten Animationsframes.
+
+Zum Anwenden das Plugin auf 0.1.2 aktualisieren und die Display-Firmware neu bauen. Der HA-Companion bleibt unverändert; Bibliotheksdateien müssen nicht angepasst werden.

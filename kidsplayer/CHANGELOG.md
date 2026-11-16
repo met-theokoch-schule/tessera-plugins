@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.2
+
+- Restore New music's full-height perspective, centre/side proportions, physical gap, reflection and 320 ms slide distance based on actual frame spacing (three visible places).
+- Start the slide alongside new cover addresses after the asynchronous browse response, not before waiting on the backend.
+- Do not slide identical or missing centre artwork; a shared album image otherwise may never produce the new atlas needed to reset the slide.
+- Omit duplicate neighbours for one/two entries and remove placeholder bars during cover loads.
+- Extend native tests for delayed/failed responses, direction/distance/duration, shared artwork, animation disabled, geometry and reflections.
+
 ## 0.1.1
 
 - Allow 1x1, 2x1 and 1x2 intermediate sizes so Tessera exposes resize handles and tiles can grow to 2x2.

@@ -25,17 +25,27 @@ class LibraryTile : public tessera::Tile {
     compact_ = h_ < 160;
     y_ = compact_ ? std::min(32, h_ / 3) : 42;
     const int available = std::max(8, h_ - y_ - (compact_ ? 24 : 48));
-    size_ = std::max(8, std::min(w_ * 62 / 100, available));
+    mirror_ = !compact_;
+    // New music's centre/side ratio, gap, full-height perspective and pitch.
+    // Reserve the reflection's room so titles never overlap the original cover.
+    const int cover_room = mirror_ ? available * 100 / (100 + tessera::MIRROR_PERCENT) : available;
+    size_ = std::max(8, std::min(w_ / 2, cover_room));
+    frame_h_ = mirror_ ? size_ * (100 + tessera::MIRROR_PERCENT) / 100 : size_;
     x_ = (w_ - size_) / 2;
+    const int gap = ui::px(10);
+    side_ = std::max(0, std::min(size_ * 55 / 100, x_ - gap));
+    pitch_ = side_ >= size_ / 4 ? size_ / 2 + gap + side_ / 2 : size_ + gap;
     for (int slot : {0, 2, 1}) {
-      art_[slot] = ui::picture(c.parent);
-      int d = slot == 1 ? size_ : size_ * 65 / 100;
-      int x = slot == 0 ? x_ - d * 80 / 100 : slot == 2 ? x_ + size_ - d / 5 : x_;
-      lv_obj_set_pos(art_[slot], x, y_ + (size_ - d) / 2);
-      lv_obj_set_size(art_[slot], d, d);
+      // No full-height placeholder bars while the image atlas is being fetched.
+      art_[slot] = ui::picture(c.parent, tessera::Placeholder::NONE);
+      const int width = slot == 1 ? size_ : side_;
+      const int left = x_ - gap - side_;
+      const int x = slot == 0 ? left : slot == 2 ? w_ - left - side_ : x_;
+      lv_obj_set_pos(art_[slot], x, y_);
+      lv_obj_set_size(art_[slot], width, frame_h_);
     }
     title_ = ui::text(c.parent, tessera::Font::BODY, theme::INK);
-    lv_obj_set_pos(title_, 4, y_ + size_ + 2);
+    lv_obj_set_pos(title_, 4, y_ + frame_h_ + 2);
     lv_obj_set_width(title_, w_ - 8);
     lv_label_set_long_mode(title_, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(title_, LV_TEXT_ALIGN_CENTER, 0);
@@ -90,11 +100,22 @@ class LibraryTile : public tessera::Tile {
     selected_ = tessera::Text(data["center"]["id"] | "");
     animation_ = data["animation"] | true;
     const char *slots[] = {"left", "center", "right"};
+    const std::string next_cover = data["center"]["cover"] | "";
+    // Unlike New music, browsing is asynchronous. Keep the old atlas stationary
+    // until the new addresses are available, then slide beside set_picture().
+    // A shared album cover (or no cover) creates no new atlas: sliding it could
+    // otherwise remain displaced forever, since Tessera resets on a new atlas.
+    if (direction_ && animation_ && loaded_ && !covers_[1].empty() &&
+        !next_cover.empty() && plain(covers_[1]) != next_cover)
+      ui::slide_pictures(std::max(-w_, std::min(w_, direction_ * pitch_)), 320);
+    direction_ = 0;
     for (int i = 0; i < 3; ++i) {
       auto item = data[slots[i]];
-      ui::set_picture(art_[i], item["cover"] | "", tessera::Fit::CONTAIN,
-        i == 0 ? tessera::Turn::RIGHT : i == 2 ? tessera::Turn::LEFT : tessera::Turn::NONE);
-      if (i != 1 && total_ == 1) lv_obj_add_flag(art_[i], LV_OBJ_FLAG_HIDDEN);
+      const bool visible = i == 1 || (side_ >= size_ / 4 && (total_ > 2 || (i == 2 && total_ == 2)));
+      covers_[i] = tessera::Text(visible ? (item["cover"] | "") : "");
+      ui::set_picture(art_[i], plain(covers_[i]), tessera::Fit::CONTAIN,
+        i == 0 ? tessera::Turn::RIGHT : i == 2 ? tessera::Turn::LEFT : tessera::Turn::NONE, mirror_);
+      if (!visible) lv_obj_add_flag(art_[i], LV_OBJ_FLAG_HIDDEN);
       else lv_obj_remove_flag(art_[i], LV_OBJ_FLAG_HIDDEN);
     }
     lv_label_set_text(header_, category_.empty() ? "Reihen" : "< Zurueck");
@@ -111,10 +132,10 @@ class LibraryTile : public tessera::Tile {
   }
  private:
   void move(int direction) {
-    if (animation_) ui::slide_pictures(direction * size_ / 2, 220);
-    request(false);
+    if (total_ > 1) request(false, direction);
   }
-  void request(bool play) {
+  void request(bool play, int direction = 0) {
+    direction_ = direction;
     if (library_.empty()) { lv_label_set_text(status_, "Bibliotheks-ID fehlt"); loaded_ = true; failed_ = true; return; }
     JsonDocument doc;
     doc["ask"] = play ? "kidsplayer/play" : "kidsplayer/browse";
@@ -129,11 +150,11 @@ class LibraryTile : public tessera::Tile {
     if (!pending_) { failed_ = true; loaded_ = true; playing_ = false; }
   }
   Kidsplayer *plugin_;
-  tessera::Text library_, player_, category_, selected_, revision_;
+  tessera::Text library_, player_, category_, selected_, revision_, covers_[3];
   lv_obj_t *art_[3] = {}, *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
-  int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, index_ = 0, saved_ = 0, total_ = 0;
+  int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, frame_h_ = 0, side_ = 0, pitch_ = 0, direction_ = 0, index_ = 0, saved_ = 0, total_ = 0;
   uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0;
-  bool compact_ = false, playing_ = false, loaded_ = false, failed_ = false, animation_ = true;
+  bool mirror_ = false, compact_ = false, playing_ = false, loaded_ = false, failed_ = false, animation_ = true;
 };
 void Kidsplayer::setup() { add_tile("library", [this]() { return new LibraryTile(this); }); }
 void Kidsplayer::on_message(JsonObjectConst message) { for (auto *tile : tiles) tile->answer(message); }

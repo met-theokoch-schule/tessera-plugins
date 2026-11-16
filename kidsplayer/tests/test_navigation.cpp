@@ -8,7 +8,9 @@ static uint32_t now_ms = 100, next_re = 0;
 static tessera::Point point{100, 100};
 static JsonDocument request;
 static std::string status;
-struct Object { int x=0, y=0, width=0, height=20; bool hidden=false; };
+static int slides=0, slide_dx=0;
+static uint32_t slide_ms=0;
+struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source; };
 static Object objects[100];
 static Object &object(lv_obj_t *p) { return *reinterpret_cast<Object *>(p); }
 static int used = 0;
@@ -30,18 +32,20 @@ Point tap_point() { return point; }
 uint32_t send(const Plugin *, JsonObjectConst data) { request.set(data); return ++next_re; }
 namespace ui {
 lv_obj_t *text(lv_obj_t *, Font, theme::Role) { return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
-lv_obj_t *picture(lv_obj_t *, Placeholder) { return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
-void set_picture(lv_obj_t *, const std::string &, Fit, Turn, bool) {}
+lv_obj_t *picture(lv_obj_t *, Placeholder p) { objects[used].no_placeholder = p == Placeholder::NONE; return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
+void set_picture(lv_obj_t *p, const std::string &url, Fit, Turn turn, bool mirror) { object(p).source=url; object(p).turn=turn; object(p).mirror=mirror; }
 void set_color(lv_obj_t *, theme::Role) {}
-void slide_pictures(int, uint32_t) {}
+void slide_pictures(int dx, uint32_t ms) { ++slides; slide_dx=dx; slide_ms=ms; }
 }
 }
-static void reply(esphome::kidsplayer::Kidsplayer &plugin, uint32_t re, const char *id, int index, int total) {
+static void reply(esphome::kidsplayer::Kidsplayer &plugin, uint32_t re, const char *id, int index, int total, const char *cover="", bool animate=true) {
   JsonDocument doc;
   doc["re"] = re; doc["ok"] = true;
   auto result = doc["result"].to<JsonObject>();
   result["total"] = total; result["index"] = index; result["revision"] = "rev1";
   result["center"]["id"] = id;
+  result["animation"] = animate;
+  for (auto slot : {"left", "center", "right"}) result[slot]["cover"] = cover;
   plugin.on_message(doc.as<JsonObjectConst>());
 }
 int main() {
@@ -91,6 +95,48 @@ int main() {
     assert(request["data"]["category"] == "");
     reply(plugin, next_re, "robin", 0, 2);
   }
+  {
+    const int first = used;
+    LibraryTile tile(&plugin); context.width=400; context.height=380;
+    tile.create(context);
+    tile.on_tick(0); reply(plugin, next_re, "robin", 0, 3, "/cover_a");
+    const int before = slides;
+    // Objects are made header, left, right, centre, title, status.
+    auto &left=objects[first+1], &right=objects[first+2], &center=objects[first+3];
+    assert(left.height == center.height && right.height == center.height);
+    assert(left.width == std::min(center.width * 55 / 100, center.x - tessera::ui::px(10)));
+    assert(left.y == center.y && right.y == center.y);
+    assert(left.mirror && center.mirror && right.mirror);
+    assert(left.no_placeholder && center.no_placeholder && right.no_placeholder);
+    const int gap = center.x - left.x - left.width;
+    const int pitch = center.width/2 + gap + left.width/2;
+    point={399,120}; tile.on_tap();
+    assert(slides == before); // old covers wait in place during the backend round trip
+    now_ms += 5000; tile.on_tick(0); assert(slides == before);
+    reply(plugin, next_re, "conni", 1, 3, "/cover_b");
+    assert(slides == before+1 && slide_dx == -pitch && slide_ms == 320);
+    point={0,120}; tile.on_tap();
+    reply(plugin, next_re, "robin", 0, 3, "/cover_a");
+    assert(slides == before+2 && slide_dx == pitch);
+    point={399,120}; tile.on_tap();
+    reply(plugin, next_re, "ep_same_art", 1, 3, "/cover_a");
+    assert(slides == before+2); // same album artwork: no atlas change, never leave it slid away
+    point={399,120}; tile.on_tap();
+    reply(plugin, next_re, "disabled", 2, 3, "/cover_c", false);
+    assert(slides == before+2);
+    point={0,120}; tile.on_tap();
+    JsonDocument failure; failure["re"]=next_re; failure["ok"]=false;
+    plugin.on_message(failure.as<JsonObjectConst>());
+    assert(slides == before+2); // failed browse never animates
+    point={200,120}; tile.on_tap(); // retry browsing
+    reply(plugin, next_re, "pair", 0, 2, "/cover_d");
+    assert(left.hidden && !right.hidden); // two items never duplicate a cover on both sides
+    point={399,120}; tile.on_tap();
+    reply(plugin, next_re, "only", 0, 1, "/cover_e");
+    assert(left.hidden && right.hidden);
+    const auto last_re=next_re;
+    point={399,120}; tile.on_tap(); assert(next_re == last_re);
+  }
   assert(plugin.tiles.empty());  // late replies cannot reference destroyed tiles
-  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry and destruction passed\n";
+  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing and destruction passed\n";
 }
