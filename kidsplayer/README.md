@@ -1,6 +1,6 @@
-# Kidsplayer 0.1.4
+# Kidsplayer 0.1.5
 
-Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive, überlappenden äußeren Nachbarn und der gleichen 320-ms-Slide-Funktion von Tessera. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
+Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
 **Status:** Beta-Implementierung mit Mocktests und ausgeführten nativen C++-Navigationstests. Home Assistant und Hardware wurden nicht gestartet. Die Installationsschritte sind für einen anschließenden Test beschrieben, nicht bereits auf deinem Display ausgeführt.
 
@@ -40,7 +40,7 @@ libraries:
     display:
       show_titles: true
       cover_style: contain
-      animation: true
+      animation: false
     categories:
       - id: robin_hood
         title: Robin Hood
@@ -208,3 +208,13 @@ ha core check
 ```
 
 Anschließend Home Assistant neu starten und zuerst nur die Bibliothek öffnen. Nach dem Neustart darf die Konfigurationsprüfung `Integration 'kidsplayer' not found` nicht mehr melden. Falls stattdessen ein Ladefehler erscheint, genau diesen Protokolleintrag prüfen. Bestehende Bibliotheks-YAML und Display-Firmware bleiben für die Wiederherstellung unverändert.
+
+## Update auf 0.1.5: Unauffälliger Coverwechsel
+
+Beim Öffnen, Blättern und automatischen Bibliotheksabgleich erscheint kein „Laden …“ mehr. Während der Backendabfrage bleibt die vorherige Darstellung stehen. Die statische Anordnung wechselt über Tessera's vorhandenen Bildatlas, sobald das Ersatzbild verfügbar ist. Titel und Zurück-Zeile werden bis zur Bildrückmeldung zurückgehalten, damit kein neuer Titel über einem noch alten Cover steht. Bei unverändertem Albumcover kann der Titel sofort wechseln; dafür ist kein neuer Download nötig. Fehlende Bilder und echte Verbindungs-/Konfigurationsfehler bleiben sichtbar. Der bewusste Wiedergabestart zeigt weiterhin „Starte …“ und sein Ergebnis.
+
+Die Slide-Bewegung wird in dieser Firmware nicht verwendet. Das bestehende YAML-Feld `display.animation` bleibt für die Kompatibilität erlaubt, hat in 0.1.5 aber keine Wirkung. Die Wartezeit wird nicht künstlich verlängert; während eines ausstehenden Bildwechsels ist die Auswahl gesperrt, damit ein Tipp auf das noch alte Cover keine unsichtbare neue Folge startet. Ein Bildfehler oder 20 Sekunden ohne Bildrückmeldung lösen diesen Zustand auf und zeigen den Fehler.
+
+**Nur das Tessera-Plugin auf 0.1.5 aktualisieren und die Display-Firmware neu bauen.** Der HA-Companion 0.1.4 und die Bibliotheksdatei benötigen für diese Änderung kein Update.
+
+Der statische Bildtausch verwendet die vorhandene API, keine zweite komplette Bildpufferung: Bei einem Ebenenwechsel mit weniger Nachbarn entfernt Tessera nicht mehr benötigte Plätze weiterhin sofort. Der native Test prüft die unterdrückten Ladehinweise und die Reihenfolge der Titel-/Bildrückmeldung, keine gerenderten Frames. Der tatsächliche Eindruck auf dem Display bleibt vor Ort zu prüfen.

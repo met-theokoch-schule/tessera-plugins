@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.5
+
+- Keep browsing silent: remove initial and per-request loading text while retaining playback and error feedback.
+- Use a static cover-atlas swap instead of sliding old pictures during image transfer.
+- Keep title and navigation header until the new atlas is reported, and update immediately for shared artwork.
+- Block selection of unseen pending entries and recover from image timeouts/failures.
+- Firmware-only update; HA companion remains 0.1.4 and existing library YAML remains valid.
+
 ## 0.1.4
 
 - Fix playback/cover metadata calls for Home Assistant 2026.11.1 with MA client 1.6.0 and server 2.10.12 (schema 65).

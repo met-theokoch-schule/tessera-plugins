@@ -54,7 +54,6 @@ class LibraryTile : public tessera::Tile {
       // END NEW MUSIC IMAGE FRAMES
     }
     frames.push_back({0, centre_x_, w, nullptr});
-    pitch_ = side >= w / 4 ? w / 2 + gap + side / 2 : w + gap;
     for (Slot f : frames) {
       f.place = ui::picture(c.parent, tessera::Placeholder::NONE);
       lv_obj_set_pos(f.place, f.x, y_);
@@ -71,7 +70,7 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_pos(status_, 4, h_ - 22);
     lv_obj_set_width(status_, w_ - 8);
     lv_label_set_long_mode(status_, LV_LABEL_LONG_DOT);
-    lv_label_set_text(status_, "Laden ...");
+    lv_label_set_text(status_, "");
   }
   void on_tick(uint32_t) override {
     const uint32_t now = esphome::millis();
@@ -83,10 +82,15 @@ class LibraryTile : public tessera::Tile {
       failed_ = true;
       refreshed_ = now;
     }
-    if (!pending_ && ((!loaded_ && !failed_) || (!failed_ && now - refreshed_ > 30000))) request(false);
+    if (awaiting_picture_ && now - picture_sent_ > 20000) {
+      commit_browse();
+      picture_failed_ = true;
+      lv_label_set_text(status_, "Cover konnte nicht geladen werden");
+    }
+    if (!pending_ && !awaiting_picture_ && ((!loaded_ && !failed_) || (!failed_ && now - refreshed_ > 30000))) request(false);
   }
   void on_tap() override {
-    if (pending_) return;
+    if (pending_ || awaiting_picture_) return;
     auto p = tessera::tap_point();
     if (p.x < 0 || p.y < 0) return;
     if (p.y < y_ && !category_.empty()) {
@@ -109,7 +113,7 @@ class LibraryTile : public tessera::Tile {
     JsonObjectConst data = message["result"];
     if (data["ok"].is<bool>() && !(data["ok"] | true)) {
       lv_label_set_text(status_, data["message"] | "Fehler; HA-Protokoll pruefen");
-      failed_ = true; playing_ = false; direction_ = 0; return;
+      failed_ = true; playing_ = false; return;
     }
     if (playing_) {
       lv_label_set_text(status_, "Wiedergabe gestartet"); playing_ = false; failed_ = false; return;
@@ -119,36 +123,40 @@ class LibraryTile : public tessera::Tile {
     index_ = data["index"] | 0;
     revision_ = tessera::Text(data["revision"] | "");
     selected_ = tessera::Text(data["center"]["id"] | "");
-    animation_ = data["animation"] | true;
     const char *keys[] = {"left3", "left2", "left", "center", "right", "right2", "right3"};
-    const std::string next_cover = data["center"]["cover"] | "";
-    // Unlike New music, browsing is asynchronous. Keep the old atlas stationary
-    // until the new addresses are available, then slide beside set_picture().
-    // A shared album cover (or no cover) creates no new atlas: sliding it could
-    // otherwise remain displaced forever, since Tessera resets on a new atlas.
-    if (direction_ && animation_ && loaded_ && !covers_[SIDE].empty() &&
-        !next_cover.empty() && plain(covers_[SIDE]) != next_cover)
-      ui::slide_pictures(std::max(-w_, std::min(w_, direction_ * pitch_)), 320);
-    direction_ = 0;
+    pending_title_ = tessera::Text((data["show_titles"] | true) ? (data["center"]["title"] | "") : "");
+    pending_header_ = tessera::Text(category_.empty() ? "Reihen" : "< Zurueck");
+    awaiting_picture_ = false;
+    picture_sent_ = esphome::millis();
     for (auto &slot : slots_) {
       const int i = slot.offset + SIDE;
       auto item = data[keys[i]];
       const bool visible = shown(slot.offset) && !item.isNull();
-      covers_[i] = tessera::Text(visible ? (item["cover"] | "") : "");
+      const std::string next_cover = visible ? (item["cover"] | "") : "";
+      // set_picture keeps the old atlas until the replacement arrives. Keep the
+      // old title/header too; a shared cover needs no new atlas/callback.
+      if (!next_cover.empty() && next_cover != plain(covers_[i])) awaiting_picture_ = true;
+      covers_[i] = tessera::Text(next_cover);
       const tessera::Turn turn = !slot.offset ? tessera::Turn::NONE
                                   : slot.offset < 0 ? tessera::Turn::RIGHT : tessera::Turn::LEFT;
       ui::set_picture(slot.place, plain(covers_[i]), tessera::Fit::CONTAIN, turn, mirror_);
       if (visible) lv_obj_remove_flag(slot.place, LV_OBJ_FLAG_HIDDEN);
       else lv_obj_add_flag(slot.place, LV_OBJ_FLAG_HIDDEN);
     }
-    lv_label_set_text(header_, category_.empty() ? "Reihen" : "< Zurueck");
-    lv_label_set_text(title_, (data["show_titles"] | true) ? (data["center"]["title"] | "") : "");
-    lv_label_set_text(status_, "");
     loaded_ = true; failed_ = false;
+    if (!awaiting_picture_) commit_browse();
   }
   void on_picture(lv_obj_t *, tessera::PictureState state) override {
-    if (state == tessera::PictureState::NONE || state == tessera::PictureState::FAILED)
+    if (state == tessera::PictureState::SHOWN) {
+      const bool recovering = picture_failed_;
+      picture_failed_ = false;
+      if (awaiting_picture_) commit_browse();
+      else if (recovering) lv_label_set_text(status_, "");
+    } else {
+      picture_failed_ = true;
+      if (awaiting_picture_) commit_browse();
       lv_label_set_text(status_, "Cover fehlt");
+    }
   }
   void on_theme() override {
     ui::set_color(title_, theme::INK); ui::set_color(header_, theme::INK); ui::set_color(status_, theme::MUTED);
@@ -163,11 +171,16 @@ class LibraryTile : public tessera::Tile {
     const int n = total_, far = offset < 0 ? -offset : offset;
     return 2 * far < n || (2 * far == n && offset > 0);
   }
-  void move(int direction) {
-    if (total_ > 1) request(false, direction);
+  void commit_browse() {
+    awaiting_picture_ = false;
+    lv_label_set_text(header_, plain(pending_header_).c_str());
+    lv_label_set_text(title_, plain(pending_title_).c_str());
+    if (!picture_failed_) lv_label_set_text(status_, "");
   }
-  void request(bool play, int direction = 0) {
-    direction_ = direction;
+  void move(int) {
+    if (total_ > 1) request(false);
+  }
+  void request(bool play) {
     if (library_.empty()) { lv_label_set_text(status_, "Bibliotheks-ID fehlt"); loaded_ = true; failed_ = true; return; }
     JsonDocument doc;
     doc["ask"] = play ? "kidsplayer/play" : "kidsplayer/browse";
@@ -179,16 +192,17 @@ class LibraryTile : public tessera::Tile {
     playing_ = play;
     pending_ = tessera::send(plugin_, doc.as<JsonObjectConst>());
     sent_ = esphome::millis(); refreshed_ = sent_;
-    lv_label_set_text(status_, pending_ ? (play ? "Starte ..." : "Laden ...") : "Tessera nicht verbunden");
+    if (!pending_) lv_label_set_text(status_, "Tessera nicht verbunden");
+    else if (play) lv_label_set_text(status_, "Starte ...");
     if (!pending_) { failed_ = true; loaded_ = true; playing_ = false; }
   }
   Kidsplayer *plugin_;
-  tessera::Text library_, player_, category_, selected_, revision_, covers_[2 * SIDE + 1];
+  tessera::Text library_, player_, category_, selected_, revision_, pending_header_, pending_title_, covers_[2 * SIDE + 1];
   tessera::List<Slot> slots_;
   lv_obj_t *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
-  int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, frame_h_ = 0, pitch_ = 0, direction_ = 0, index_ = 0, saved_ = 0, total_ = 0;
-  uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0;
-  bool mirror_ = false, compact_ = false, playing_ = false, loaded_ = false, failed_ = false, animation_ = true;
+  int w_ = 0, h_ = 0, x_ = 0, y_ = 0, size_ = 0, frame_h_ = 0, index_ = 0, saved_ = 0, total_ = 0;
+  uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0, picture_sent_ = 0;
+  bool mirror_ = false, compact_ = false, playing_ = false, loaded_ = false, failed_ = false, awaiting_picture_ = false, picture_failed_ = false;
 };
 void Kidsplayer::setup() { add_tile("library", [this]() { return new LibraryTile(this); }); }
 void Kidsplayer::on_message(JsonObjectConst message) { for (auto *tile : tiles) tile->answer(message); }
