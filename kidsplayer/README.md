@@ -179,3 +179,32 @@ Tessera verdeckt den HA-Fehlertext in dieser allgemeinen Meldung. Im untersuchte
 Die vorhandene Display-Firmware 0.1.3 kann mit diesem Companion weiterarbeiten. Optional danach Plugin-Firmware 0.1.4 bauen: Sie fordert mit `protocol: 1` strukturierte Fehler an und zeigt die konkrete Fehlermeldung statt des pauschalen Tessera-Texts. **Companion zuerst aktualisieren**, bevor die neue Firmware verwendet wird. Alte Firmware erhält bei Fehlern weiterhin eine echte Fehlerantwort und meldet keine falsche erfolgreiche Wiedergabe.
 
 Die erste HA-Protokollzeile enthält ab jetzt Fehlerklasse und Meldung; der vollständige Traceback bleibt ebenfalls im HA-Protokoll. Bei verbleibendem Fehler bitte den neuen Eintrag `Kidsplayer-Wiedergabe fehlgeschlagen (...)` prüfen. Die Reparatur wurde gegen Original-Clientmethoden und Mocks getestet; eine erfolgreiche Audioausgabe auf dem echten Player ist erst nach diesem Update bestätigt.
+
+## Fehler: `unknown_command` / `Integration 'kidsplayer' not found`
+
+Wenn die HA-Konfigurationsprüfung `Integration error: kidsplayer - Integration 'kidsplayer' not found.` meldet, ist der YAML-Eintrag zwar vorhanden, HA findet aber kein installierbares Companion-Paket. Dann sind weder `kidsplayer/browse` noch `kidsplayer/play` registriert; Bibliothek, Cover und Wiedergabe können nicht funktionieren. Eine Firmwareänderung behebt diesen Installationsfehler nicht.
+
+Diese Dateien müssen direkt in **Home Assistant's** `/config/custom_components/kidsplayer/` liegen:
+
+```text
+/config/custom_components/kidsplayer/
+├── __init__.py
+├── manifest.json
+├── library.py
+├── playback.py
+└── compat.py
+```
+
+Der Tessera-Pluginordner `/config/tessera-plugins/kidsplayer/` allein genügt nicht. Ebenso falsch wäre eine zusätzliche Ebene wie `/config/custom_components/kidsplayer/backend/custom_components/kidsplayer/`.
+
+Ein passendes Installationsarchiv lässt sich auf dem Entwicklungsrechner mit `python3 tools/package-companion.py /tmp/kidsplayer-ha-companion-0.1.4.zip` erzeugen. Es enthält ausschließlich den Companion und seine Lizenz mit dem Wurzelordner `custom_components/`, keine Audioinhalte, Zugangsdaten oder Firmware.
+
+ZIP auf den HA-Rechner nach `/config/kidsplayer-ha-companion-0.1.4.zip` kopieren und im HA-Terminal ausführen:
+
+```sh
+unzip -o /config/kidsplayer-ha-companion-0.1.4.zip -d /config
+ls -l /config/custom_components/kidsplayer/
+ha core check
+```
+
+Anschließend Home Assistant neu starten und zuerst nur die Bibliothek öffnen. Nach dem Neustart darf die Konfigurationsprüfung `Integration 'kidsplayer' not found` nicht mehr melden. Falls stattdessen ein Ladefehler erscheint, genau diesen Protokolleintrag prüfen. Bestehende Bibliotheks-YAML und Display-Firmware bleiben für die Wiederherstellung unverändert.

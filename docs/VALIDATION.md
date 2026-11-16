@@ -106,3 +106,9 @@ python3 -m unittest discover -s kidsplayer/tests -v
 Ohne diesen zusätzlichen Checkout wird genau der Original-Clientmethoden-Test übersprungen; alle anderen Tests bleiben lokal ausführbar. Nativer C++-Test erweitert: strukturierter Anwendungsfehler wird vor dem Wiedergabe-Erfolgszweig geprüft und nicht automatisch wiederholt. Offizieller Tessera-Validator und Python-Bytecodekompilierung erfolgreich.
 
 Die Live-Installation wurde nicht verändert, kein echter Play-Aufruf durch den Agenten ausgelöst und keine erfolgreiche Audiowiedergabe behauptet. Der Audiofix erfordert Companion 0.1.4 plus HA-Neustart; die neue Fehleranzeige zusätzlich Firmware 0.1.4. Im alten Firmwareprotokoll kann Tessera den Fehler weiter pauschalisieren; ab Companion 0.1.4 enthält schon die erste HA-Logzeile den Fehlertext.
+
+## Live-Diagnose: Companion nicht gefunden
+
+Die Browserdiagnose lieferte bei beiden Bibliotheks-Protokollvarianten `unknown_command`. Anschließend ergab die HA-Konfigurationsprüfung die konkrete Warnung `Integration error: kidsplayer - Integration 'kidsplayer' not found.`; der YAML-Block war vorhanden. Dies belegt eine aktuell nicht auffindbare Custom Integration und erklärt den fehlenden Bibliotheks-/Coverabruf unabhängig von der Animation. Die vorherige Kompatibilitätskorrektur allein konnte diese Installation nicht reparieren.
+
+`tools/package-companion.py` erzeugt ein ZIP mit den fünf benötigten Companiondateien und Lizenz direkt unter `custom_components/kidsplayer/`. Das erzeugte ZIP wurde auf beschädigte Einträge und seinen Inhalt geprüft. Keine neue Plugin-/Companionversion, kein Firmwarebau und keine Änderung der laufenden Installation durch den Agenten. Das Wiederherstellen der Dateien und der HA-Neustart stehen als nächster Schritt aus.
