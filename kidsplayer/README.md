@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.5
+# Kidsplayer 0.1.6
 
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
@@ -218,3 +218,15 @@ Die Slide-Bewegung wird in dieser Firmware nicht verwendet. Das bestehende YAML-
 **Nur das Tessera-Plugin auf 0.1.5 aktualisieren und die Display-Firmware neu bauen.** Der HA-Companion 0.1.4 und die Bibliotheksdatei benötigen für diese Änderung kein Update.
 
 Der statische Bildtausch verwendet die vorhandene API, keine zweite komplette Bildpufferung: Bei einem Ebenenwechsel mit weniger Nachbarn entfernt Tessera nicht mehr benötigte Plätze weiterhin sofort. Der native Test prüft die unterdrückten Ladehinweise und die Reihenfolge der Titel-/Bildrückmeldung, keine gerenderten Frames. Der tatsächliche Eindruck auf dem Display bleibt vor Ort zu prüfen.
+
+## Update auf 0.1.6: Größere Cover und ruhiger Hintergrund
+
+Das bei Berührung kurz dunklere Feld stammt aus Tessera's gedrücktem Kachelzustand, während die Cover samt Spiegelung bereits im normalen Hintergrund gerendert sind. Kidsplayer legt jetzt eine eigene undurchsichtige, nicht anklickbare Fläche unter seine Inhalte. Sie übernimmt die normale Kachelfarbe; ein transparenter Kachelhintergrund verwendet die Seitenfarbe. Die normale Farbe wird unabhängig vom aktuellen Druckzustand gelesen. Kein fremdes Objekt und keine andere Kachel werden verändert.
+
+Diese Lösung deckt den **Inhaltsbereich des Plugins** ab. Den schmalen äußeren Rahmen bzw. die Polsterung der Tessera-Kachel zeichnet weiterhin der Kern; dessen Druckeffekt kann die derzeitige Plugin-API nicht vollständig abschalten. Ein vollständiger Ausschalter für diesen äußeren Bereich würde eine Kern-/API-Erweiterung erfordern.
+
+Das Mittelcover darf jetzt statt 50 % ungefähr 63 % der Inhaltsbreite einnehmen; die genaue Obergrenze lässt links und rechts weiterhin Platz für perspektivische Nachbarn. Eine kürzere Kopfzeile und eine gemeinsame Fußzeile schaffen zusätzlich Höhe. Die Covergruppe wird in der restlichen Höhe mittig platziert. In einer breiten, hohen Testkachel mit 400 × 380 Inhaltspixeln wächst die Coverbreite von 200 auf 253 Pixel; bei anderen Größen entscheidet weiterhin der verfügbare Platz.
+
+Titel und Status verwenden einzeilige Labels und dieselbe Fußzeile: Ohne Meldung erscheint der Titel, bei Wiedergabestart oder Fehler stattdessen die Meldung. Keine zwei Texte überlagern sich. Die Referenz-Schleife für Nachbarn bleibt unverändert; die Begrenzung der Hauptcovergröße wurde auf den ausdrücklichen Wunsch nach größeren Covern angepasst. Bei größeren Mittelcovern passen entsprechend weniger äußere Nachbarn vollständig in die Kachel.
+
+**Nur Plugin 0.1.6 installieren und die Display-Firmware neu bauen.** Companion 0.1.4 und Bibliotheks-YAML bleiben unverändert. Die Änderungen sind nativ gegen die echten API-Header geprüft; Größe und Druckwirkung müssen auf dem Guition visuell abgenommen werden.

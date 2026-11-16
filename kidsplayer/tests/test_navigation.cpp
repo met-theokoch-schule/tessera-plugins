@@ -11,12 +11,28 @@ static std::string status;
 static std::vector<std::string> label_events;
 static int slides=0, slide_dx=0;
 static uint32_t slide_ms=0;
-struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; };
-static Object objects[1000];
+struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; };
+static Object objects[1000], backgrounds[100];
+static int background_count=0, background_writes=0;
 static Object &object(lv_obj_t *p) { return *reinterpret_cast<Object *>(p); }
 static int used = 0;
 namespace esphome { uint32_t millis() { return now_ms; } }
 extern "C" {
+bool lv_color_eq(lv_color_t a, lv_color_t b) { return a.red==b.red && a.green==b.green && a.blue==b.blue; }
+lv_obj_t *lv_obj_get_parent(const lv_obj_t *p) { return object(const_cast<lv_obj_t *>(p)).parent; }
+lv_style_res_t lv_obj_get_local_style_prop(lv_obj_t *p, lv_style_prop_t prop, lv_style_value_t *value, lv_style_selector_t selector) {
+  assert(selector == LV_PART_MAIN); // always sample normal, never pressed
+  if (prop == LV_STYLE_BG_OPA) value->num=object(p).opacity;
+  else if (prop == LV_STYLE_BG_COLOR) value->color=object(p).ground;
+  else return LV_STYLE_RES_NOT_FOUND;
+  return LV_STYLE_RES_FOUND;
+}
+void lv_obj_set_style_bg_color(lv_obj_t *p, lv_color_t color, lv_style_selector_t selector) {
+  assert(object(p).background && selector == 0); // never change the host tile
+  object(p).ground=color; ++background_writes;
+}
+void lv_obj_set_style_radius(lv_obj_t *, int32_t, lv_style_selector_t) {}
+
 int32_t lv_font_get_line_height(const lv_font_t *font) { return font->line_height; }
 void lv_obj_set_pos(lv_obj_t *p, int32_t x, int32_t y) { object(p).x=x; object(p).y=y; }
 void lv_obj_set_size(lv_obj_t *p, int32_t w, int32_t h) { object(p).width=w; object(p).height=h; }
@@ -33,8 +49,11 @@ void Plugin::add_tile(const char *, std::function<Tile *()>) {}
 Point tap_point() { return point; }
 uint32_t send(const Plugin *, JsonObjectConst data) { request.set(data); return ++next_re; }
 namespace ui {
+lv_obj_t *block(lv_obj_t *, theme::Role role) { auto &o=backgrounds[background_count++]; o.background=true; o.role=role; return reinterpret_cast<lv_obj_t *>(&o); }
+void set_fill(lv_obj_t *p, Tone, theme::Role role) { object(p).role=role; }
 const lv_font_t *font(Font) { static lv_font_t face{}; face.line_height=20; return &face; }
 lv_obj_t *text(lv_obj_t *, Font, theme::Role) { return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
+lv_obj_t *label(lv_obj_t *p, Font f, theme::Role role) { return text(p,f,role); }
 lv_obj_t *picture(lv_obj_t *, Placeholder p) { objects[used].no_placeholder = p == Placeholder::NONE; return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
 void set_picture(lv_obj_t *p, const std::string &url, Fit, Turn turn, bool mirror) { object(p).source=url; object(p).turn=turn; object(p).mirror=mirror; }
 void set_color(lv_obj_t *, theme::Role) {}
@@ -228,6 +247,41 @@ int main() {
     assert(note.text.empty()); // late success clears the prior image timeout
   }
   for (const auto &text : label_events) assert(text != "Laden ...");
+  {
+    // Fixed plugin-local ground: host pressed colour/style is never modified.
+    Object host, layer;
+    host.ground.red=23;host.ground.green=91;host.ground.blue=127;
+    layer.parent=reinterpret_cast<lv_obj_t *>(&host);
+    context.parent=reinterpret_cast<lv_obj_t *>(&layer);context.width=400;context.height=380;
+    const int first=used, back=background_count;
+    LibraryTile tile(&plugin);tile.create(context);
+    auto &surface=backgrounds[back];
+    assert(surface.width == context.width && surface.height == context.height);
+    assert(surface.x == 0 && surface.y == 0 && surface.background);
+    assert(surface.ground.red == 23 && surface.ground.green == 91);
+    const int writes=background_writes;
+    host.pressed=true;tile.on_tick(0);
+    assert(background_writes == writes); // stable normal colour needs no redraw on every tick
+    assert(surface.ground.red == 23 && surface.ground.blue == 127);
+    assert(host.ground.red == 23); // the host remains untouched
+    host.ground.red=75;tile.on_tick(0);assert(surface.ground.red == 75); // normal palette updates follow
+    host.opacity=LV_OPA_TRANSP;tile.on_tick(0);assert(surface.role == theme::PAGE);
+    tile.on_theme();assert(surface.role == theme::CARD);
+    context.parent=nullptr;
+    // The 400px-wide tall example now uses >50% of its width for the main cover.
+    auto &center=objects[used-3], &title=objects[used-2], &note=objects[used-1];
+    assert(center.width > context.width/2);
+    assert(center.width <= (context.width-2*tessera::ui::px(10))*2/3);
+    assert(title.y == note.y); // one footer, never two simultaneous overlapping texts
+    assert(center.y + center.height*100/(100+tessera::MIRROR_PERCENT) <= title.y);
+    tile.on_tick(0);reply(plugin,next_re,"large",0,3,"/large");
+    assert(!title.hidden && note.text.empty());
+    point={200,120};tile.on_tap();reply(plugin,next_re,"episode",0,3,"/episode");
+    point={200,120};tile.on_tap();assert(title.hidden && note.text == "Starte ...");
+    reply(plugin,next_re,"episode",0,3,"/episode");assert(title.hidden && note.text == "Wiedergabe gestartet");
+    point={399,120};tile.on_tap();reply(plugin,next_re,"next",1,3,"/next");
+    assert(!title.hidden && note.text.empty());
+  }
   assert(plugin.tiles.empty());  // late replies cannot reference destroyed tiles
-  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing, seven-place flow, application errors, silent loading and destruction passed\n";
+  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing, seven-place flow, application errors, silent loading, stable background, larger covers and destruction passed\n";
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+- Add a stable plugin-local background matching the host's normal tile colour, masking touch darkening within the cover area without changing the core or other tiles.
+- Increase the main cover width cap from 50% to about 63%, shorten the header and centre the cover group vertically.
+- Share one single-line footer between title and playback/error status, keeping text off the cover motif.
+- Preserve the original outer-neighbour loop, seven-place limit, reflections and silent static image changes.
+- Firmware-only update; companion remains 0.1.4.
+
 ## 0.1.5
 
 - Keep browsing silent: remove initial and per-request loading text while retaining playback and error feedback.
