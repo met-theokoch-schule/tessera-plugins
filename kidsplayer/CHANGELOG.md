@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.9
+
+- Increase the main cover width cap to three quarters of the width after side gaps (about 71% of a 400 px tile).
+- Prefer a larger unreflected cover on shallow tiles; retain the original 30% reflection only when it costs at most 10% of possible cover size.
+- Centre unreflected covers in the artwork space between the navigation row and full-width title.
+- Keep both inner neighbours at least one sixth as wide as the main cover; the pinned New music frame loop itself remains unchanged.
+- Extend native geometry checks for 400 × 250, 400 × 300, 400 × 380 and 400 × 500 tiles, including title/button clearance, neighbour visibility and adaptive reflection.
+- Firmware-only update; Home Assistant companion remains 0.1.7. Includes the top-right player controls and centred titles from 0.1.8.
+
 ## 0.1.8
 
 - Move the native media and Play/Pause buttons to the top right, with the same size and vertical position as Back.

@@ -131,6 +131,28 @@ int main() {
     assert(request["data"]["category"] == "");
     reply(plugin, next_re, "robin", 0, 2);
   }
+  // Favour the artwork in the user's wide/two-row layout. A tall tile can
+  // retain its reflection; either way the motif must clear header and title.
+  struct CoverCase { int width, height, minimum_cover; bool mirror; };
+  for (auto shape : {CoverCase{400,250,160,false}, {400,300,210,false},
+                     {400,380,280,false}, {400,500,280,true}}) {
+    const int first=used, keys=background_count;
+    LibraryTile tile(&plugin);context.width=shape.width;context.height=shape.height;
+    tile.create(context);
+    tile.on_tick(0);reply(plugin,next_re,"series",0,3,"/art");
+    auto &center=objects[used-3], &title=objects[used-2];
+    const int motif_height=center.mirror?center.height*100/(100+tessera::MIRROR_PERCENT):center.height;
+    assert(center.width >= shape.minimum_cover && motif_height >= shape.minimum_cover-1);
+    assert(center.mirror == shape.mirror);
+    assert(center.y >= backgrounds[keys+3].y+backgrounds[keys+3].height);
+    assert(center.y+motif_height <= title.y);
+    assert(center.y+center.height <= context.height);
+    assert(center.x*2+center.width >= context.width-1 && center.x*2+center.width <= context.width);
+    auto &left=objects[first+1], &right=objects[first+2];
+    assert(left.x >= 0 && right.x+right.width <= context.width);
+    assert(left.width >= center.width/6 && right.width >= center.width/6);
+    assert(!left.hidden && !right.hidden); // navigation still has two visible neighbours
+  }
   {
     const int first = used;
     LibraryTile tile(&plugin); context.width=400; context.height=380;
@@ -142,7 +164,7 @@ int main() {
     assert(left.height == center.height && right.height == center.height);
     assert(left.width == std::min(center.width * 55 / 100, center.x - tessera::ui::px(10)));
     assert(left.y == center.y && right.y == center.y);
-    assert(left.mirror && center.mirror && right.mirror);
+    assert(left.mirror == center.mirror && right.mirror == center.mirror);
     assert(left.no_placeholder && center.no_placeholder && right.no_placeholder);
     const int gap = center.x - left.x - left.width;
     const int pitch = center.width/2 + gap + left.width/2;
@@ -279,12 +301,13 @@ int main() {
     host.opacity=LV_OPA_TRANSP;tile.on_tick(0);assert(surface.role == theme::PAGE);
     tile.on_theme();assert(surface.role == theme::CARD);
     context.parent=nullptr;
-    // The 400px-wide tall example now uses >50% of its width for the main cover.
+    // Use more of the available width; do not sacrifice a large cover for a reflection.
     auto &center=objects[used-3], &title=objects[used-2], &note=objects[used-1];
-    assert(center.width > context.width/2);
-    assert(center.width <= (context.width-2*tessera::ui::px(10))*2/3);
+    assert(center.width > context.width*7/10);
+    assert(center.width <= (context.width-2*tessera::ui::px(10))*3/4);
     assert(title.y == note.y); // one footer, never two simultaneous overlapping texts
-    assert(center.y + center.height*100/(100+tessera::MIRROR_PERCENT) <= title.y);
+    const int cover_height=center.mirror?center.height*100/(100+tessera::MIRROR_PERCENT):center.height;
+    assert(center.y + cover_height <= title.y);
     tile.on_tick(0);reply(plugin,next_re,"large",0,3,"/large");
     assert(!title.hidden && note.text.empty());
     point={200,120};tile.on_tap();reply(plugin,next_re,"episode",0,3,"/episode");

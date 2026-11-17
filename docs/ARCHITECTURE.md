@@ -85,3 +85,9 @@ Die eigentliche Darstellung/Bedienung der Medienkarte bleibt vollständig im Tes
 Back, Medienansicht und Play/Pause teilen bei großen Kacheln eine obere Navigationszeile mit gleichem Durchmesser und y-Wert. Der Wurzel-Header endet vor den Playerknöpfen; seine Langtextkürzung bleibt aktiv. Cover und Reflexion beginnen unter dieser Zeile. Die Fußzeile wird wieder ausschließlich von Titel bzw. Meldung belegt, beide horizontal über die volle Inhaltsbreite zentriert. In kleinen Kacheln bleiben die Playerknöpfe ausgeblendet.
 
 `Normale Medienkachel fehlt` benennt die Voraussetzung für den nativen Opener deutlicher. Die Rückmeldung bedeutet nicht, dass der Inspector-Player unbekannt wäre; die normale Player-Kachel im Layout fehlt. Ein zusätzlicher Kern-Playerzustand wird weiterhin nicht angelegt und kein laufendes Layout automatisch umgeschrieben.
+
+## Coverfläche ab 0.1.9
+
+Die bisherige Breitenbegrenzung von zwei Dritteln nach seitlichen Abständen wird auf drei Viertel erhöht. Dazu sinkt die Bedingung außerhalb der unveränderten Referenz-Schleife von `side >= w / 4` auf `side >= max(1, w / 6)`; damit bleiben auch bei größerem Mittelcover innere Nachbarn sichtbar. Keine Änderung an der Referenz unter `examples/new_music/`.
+
+Die Kachel vergleicht die mögliche Covergröße mit und ohne die feste Tessera-Spiegelung (30% Zusatzhöhe). Eine Spiegelung bleibt nur auf nicht kompakten Kacheln erhalten, wenn die Coverkante dabei mindestens 90% der ohne Spiegelung möglichen Kante erreicht. Andernfalls wird die frei werdende Höhe dem Cover gegeben; dessen Gruppe steht mittig zwischen Navigations- und Titelzeile. Die gesamte tatsächliche Motivhöhe bleibt oberhalb des Titels, beide seitlichen Motive bleiben in der Kachel. Mehr dargestellte Pixel erhöhen den von Tessera verwalteten Atlasbedarf, nicht die Bibliotheks-/Transportgröße oder die Zahl der Bildplätze. Kein zusätzlicher Bildweg, keine Tessera-Kernänderung, keine Änderung am HA-Companion.

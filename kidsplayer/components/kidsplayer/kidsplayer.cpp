@@ -40,29 +40,31 @@ class LibraryTile : public tessera::Tile {
     y_ = std::max(key_y + back_size + ui::px(4), ui::line_height(tessera::Font::BODY) + 4);
     lv_obj_set_pos(header_, 6, key_y + (back_size - ui::line_height(tessera::Font::BODY)) / 2);
     if (controls_) lv_obj_set_width(header_, w_ - margin - 2 * button - button_gap - 12);
-    mirror_ = !compact_;
     // One footer alternates between title and status. Keep the entire cover
     // above it; only the reflection may extend behind the footer.
     const int width_ = w_, height_ = h_ - y_, gap_ = ui::px(6);
     const int text = std::max(ui::line_height(tessera::Font::TITLE), ui::line_height(tessera::Font::BODY)) + ui::px(4);
     const int footer = text;
     const int room = std::max(1, height_ - footer - gap_);
-    int h = mirror_ ? std::min(room * 100 / (100 + tessera::MIRROR_PERCENT / 2), height_ * 100 / (100 + tessera::MIRROR_PERCENT))
-                    : room;
-    // Leave each inner neighbour at least a quarter of the centre width.
-    // This raises the width cap from 50% to roughly 63%, without cropping covers.
-    const int width_cap = std::max(8, (width_ - 2 * ui::px(10)) * 2 / 3);
-    h = std::min(h, width_cap);
-    size_ = std::max(8, h);
+    // Let the cover use roughly 71% of a wide tile while keeping both inner
+    // neighbours. On shallow tiles the fixed 30% reflection used too much of
+    // the available height: retain it only if it costs at most 10% cover size.
+    const int width_cap = std::max(8, (width_ - 2 * ui::px(10)) * 3 / 4);
+    const int full_size = std::min(room, width_cap);
+    const int reflected_size = std::min(width_cap, std::min(
+        room * 100 / (100 + tessera::MIRROR_PERCENT / 2),
+        height_ * 100 / (100 + tessera::MIRROR_PERCENT)));
+    mirror_ = !compact_ && reflected_size * 100 >= full_size * 90;
+    size_ = std::max(8, mirror_ ? reflected_size : full_size);
     frame_h_ = mirror_ ? size_ * (100 + tessera::MIRROR_PERCENT) / 100 : size_;
-    const int frame_area = compact_ ? height_ - footer : height_;
+    const int frame_area = mirror_ ? height_ : room;
     frame_y_ = y_ + std::max(0, (frame_area - frame_h_) / 2);
     x_ = (w_ - size_) / 2;
     const int w = size_, centre_x_ = x_;
     const int gap = ui::px(10);
     const int side = std::min(w * 55 / 100, centre_x_ - gap);
     tessera::List<Slot> frames;
-    if (side >= w / 4) {
+    if (side >= std::max(1, w / 6)) {
       // BEGIN NEW MUSIC IMAGE FRAMES: copied unchanged from the pinned reference.
       const int spread = SIDE > 1 ? (centre_x_ - gap - side) / (SIDE - 1) : 0;
       // Close together, as a stack of records: on a wide tile the flow keeps to the middle.

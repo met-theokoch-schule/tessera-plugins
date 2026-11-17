@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.8
+# Kidsplayer 0.1.9
 
 Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
@@ -279,3 +279,13 @@ Die Titel der ausgewählten Reihe und Folge stehen unten wieder **mittig über d
 Die vorhandene Medienkachel bleibt wegen der technischen Grenze der Plugin-API erforderlich; die Playersteuerung wurde nicht nachgebaut. Kidsplayer selbst wechselt dabei keine Seite. Die bestehende HA-Konfiguration wird nicht verändert.
 
 **Update:** Plugin **0.1.8** laden, Display-Firmware neu bauen/installieren und Layout senden. Companion **0.1.7**, ZIP, Bibliotheks-YAML und Cover bleiben unverändert. Neue Positionen, Titelzentrierung sowie Öffnen/Schließen der Steuerung am Display prüfen.
+
+## Update auf 0.1.9: Mehr Fläche für die Cover
+
+Große Cover haben jetzt Vorrang vor der Spiegelung: Das Mittelcover kann nach Abzug der seitlichen Abstände bis zu drei Viertel der übrigen Breite belegen (bei 400 Pixeln Inhaltsbreite maximal 285 statt bisher ungefähr 253 Pixel). Links und rechts bleiben perspektivische Nachbarcover sichtbar. Die unveränderte New-music-Schleife ordnet weiterhin bis zu sieben Plätze an; die Mindestbreite eines inneren Nachbarn beträgt nun ein Sechstel des Mittelcovers.
+
+Bei einer breiten, niedrigen Kachel wird die Spiegelung weggelassen, wenn sie mehr als zehn Prozent der möglichen Covergröße kosten würde. So erhält das Originalcover mehr Höhe. In ausreichend hohen Kacheln bleibt die gewohnte auslaufende Spiegelung erhalten. Ungespiegelte Cover werden im freien Bereich zwischen Kopf- und Titelzeile zentriert. Covermotive werden weiterhin mit `contain` vollständig dargestellt; Titel und obere Bedienelemente bleiben frei.
+
+Beispiele aus dem nativen Test mit 20 Pixel hohen Schrift-Fixtures: **400 × 250** Inhaltspixel zeigen ein **168 × 168** großes Mittelcover; **400 × 300** zeigen **218 × 218**; **400 × 380** zeigen **285 × 285**. Bei **400 × 500** passen 285 Pixel Cover plus Spiegelung. Die tatsächlichen Werte auf dem Display hängen von Tessera-Schriftgrößen, Skalierung und nutzbarer Kachelfläche ab. Die Tests ersetzen keine visuelle Abnahme am Guition.
+
+**Update:** Plugin **0.1.9** laden und die Display-Firmware neu bauen/installieren. Die Kachelgröße und Bibliotheks-YAML können bleiben. Companion **0.1.7** und das HA-ZIP müssen nicht erneut installiert werden. Dieses Update enthält auch die oberen Playerknöpfe und die mittigen Titel aus 0.1.8; stehen die Knöpfe noch unten, läuft diese Änderung noch nicht in der installierten Display-Firmware.
