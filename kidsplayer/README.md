@@ -1,8 +1,8 @@
-# Kidsplayer 0.1.6
+# Kidsplayer 0.1.7
 
 Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
-Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
+Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt ein runder Pfeil nach links zur Reihenebene. Die Überschrift der Reihenebene lässt sich pro Kachel unter **Überschrift** ändern (Standard: `Reihen`, maximal 64 Zeichen). Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
 **Status:** Beta-Implementierung mit Mocktests und ausgeführten nativen C++-Navigationstests. Home Assistant und Hardware wurden nicht gestartet. Die Installationsschritte sind für einen anschließenden Test beschrieben, nicht bereits auf deinem Display ausgeführt.
 
@@ -245,3 +245,20 @@ Der neue Leser verarbeitet alle Netzwerkstücke bis zum Dateiende und prüft nac
 `cover: auto` gilt immer für genau den betreffenden Eintrag. Eine Reihe mit `cover: conni.jpg` bleibt ein lokales Bild, auch wenn ihre Folgen `cover: auto` verwenden. Für ein automatisches Reihenbild dort ebenfalls `auto` setzen. Ganze Album-URIs und vollständig provider-spezifische URIs werden für die Metadatenauflösung verwendet; es gibt keine Titelsuche.
 
 Wenn weiterhin „Cover fehlt“ erscheint, das HA-Protokoll nach **`Kidsplayer-Coverdownload fehlgeschlagen`** bzw. **`Kidsplayer-Covermetadaten fehlen`** filtern. Die neue Meldung unterscheidet zum Beispiel HTTP 403, Zeitüberschreitung und ungültige Bilddaten. Eine erfolgreiche Darstellung auf dem echten Display ist erst nach dem Update und einem erneuten Abruf bestätigt.
+
+## Update auf 0.1.7: Überschrift und runde Bedienelemente
+
+Im Inspector besitzt jede Kidsplayer-Kachel die Option **Überschrift**. Dort beispielsweise `Mirellas Hörspiele` eintragen; ein leeres Feld blendet den Text aus. Auf der Folgenebene ersetzt ein Kreis mit Linkspfeil den bisherigen Zurück-Text. Der ausgewählte Reihenindex bleibt beim Zurückgehen erhalten.
+
+Ab **280 × 220 Tessera-Referenzpixeln im Inhaltsbereich** erscheinen unten rechts zwei runde Knöpfe mit jeweils 44 Referenzpixeln Durchmesser. Die tatsächlichen Pixelmaße skalieren mit Tessera. In schmalen/niedrigen Kacheln werden beide weggelassen. Titel und Meldungen erhalten Platz links neben den Knöpfen; die eigentlichen Cover bleiben vollständig sichtbar.
+
+- **⋯** öffnet die vorhandene Tessera-Mediensteuerung mit Cover, Lautstärke, Fortschritt und weiteren Playerfunktionen. **Voraussetzung:** Im Kidsplayer-Inspector einen Player auswählen und für **dieselbe Entity** zusätzlich eine normale Tessera-Medienkachel im Layout anlegen. Diese darf auf einer anderen Seite liegen. Kidsplayer öffnet deren echte Detailansicht als Overlay, ohne die Seite oder seine Auswahl zu wechseln. Der native Zurückknopf schließt die Steuerung. Fehlt die Medienkachel, erscheint `Medienkachel fuer Player fehlt`.
+- **▶ / Ⅱ** pausiert oder setzt die aktuelle Warteschlange fort. Der Knopf folgt dem Playerzustand aus Home Assistant und sendet Tessera's `Wish::PLAYING` (`media_player.media_play_pause`). Es wird **kein** erneuter `kidsplayer/play`-Aufruf gesendet: Die Folge startet beim Fortsetzen nicht erneut am Anfang. Beim unbekannten Anfangszustand erscheint das kombinierte Play/Pause-Symbol. Ein nicht erreichbarer Player bzw. ein fehlgeschlagener Versand erzeugt eine Meldung; es gibt keine automatische Wiederholung.
+
+Die beiden Knöpfe benötigen den **Player im Inspector**. Ist nur `player:` in der Backend-YAML gesetzt, funktionieren Bibliothek und Folgenwiedergabe weiterhin, die neuen Knöpfe bleiben verborgen. Dadurch steuern sie immer den Player dieser Kachel. Zwei Kidsplayer-Kacheln mit verschiedenen Playern bleiben unabhängig.
+
+**Technische Grenze:** Tessera API 0.24 bietet `open_card` nur für Plugin-eigene Karten an. Deshalb verbindet ein kleiner Codegen-Adapter den Knopf mit `runtime_tiles::hold_card` der vorhandenen Medienkachel. Das Tessera-Kernprojekt wird nicht geändert; die Medienansicht wird nicht kopiert. Der Adapter verwendet aber eine interne Kernfunktion und ist deshalb bei Tessera-Upgrades erneut zu prüfen. Grundlage ist der untersuchte Kerncommit `9c7c6a674d2e214355b85d810fb7d08f8fcd3544`. Ohne eine zusätzliche Medienkachel fehlen dem Kern die benötigten Playerdaten und Fähigkeiten.
+
+**Installation:** Kidsplayer auf **0.1.7** aktualisieren, Display-Firmware in Tessera neu bauen und installieren. HA-Companion **0.1.7**, Bibliotheksdatei und Cover bleiben unverändert. Danach Überschrift und Player im Inspector einstellen, die normale Medienkachel bei Bedarf ergänzen und das Layout senden. Änderungen an der Überschrift benötigen danach keinen weiteren Firmwarebau.
+
+**Am Display prüfen:** Reihe öffnen, runden Zurückknopf testen, erneut eine Folge starten, mit dem unteren rechten Knopf pausieren und fortsetzen. Die Position muss erhalten bleiben. Mit **⋯** die native Steuerung öffnen und wieder schließen: Dieselbe Folge und Bibliotheksauswahl müssen sichtbar bleiben. Zusätzlich eine kleine Kachel testen: Dort fehlen die beiden unteren Knöpfe absichtlich.

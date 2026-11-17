@@ -11,3 +11,10 @@ async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     await smart_display.register_plugin(var, __file__)
+    # Generated main.cpp already includes smart_display.h/runtime_tiles.h.
+    # No core patch, synthetic tile, page switch or second media UI is needed.
+    cg.add(var.set_media_opener(cg.RawExpression("""[](const std::string &entity) -> bool {
+      if (!runtime_tiles::enabled) return false;
+      return esphome::kidsplayer::open_native_media(runtime_tiles::model, entity,
+        [](unsigned index) { runtime_tiles::hold_card(index); });
+    }""")))

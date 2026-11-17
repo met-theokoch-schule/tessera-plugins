@@ -5,7 +5,9 @@
     "tile_name": "Kidsplayer",
     "tile_example": "Reihe auswaehlen",
     "library": "Bibliotheks-ID",
-    "library_hint": "Benannte Bibliothek in /config/kidsplayer.yaml; Player pro Kachel auswaehlen."
+    "library_hint": "Benannte Bibliothek in /config/kidsplayer.yaml; Player pro Kachel auswaehlen.",
+    "heading": "Überschrift",
+    "heading_hint": "Text über der Reihenauswahl, zum Beispiel Mirellas Hörspiele (max. 64 Zeichen)."
   },
   "screen": {}
 }

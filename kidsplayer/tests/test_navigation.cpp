@@ -12,7 +12,10 @@ static std::vector<std::string> label_events;
 static int slides=0, slide_dx=0;
 static uint32_t slide_ms=0;
 struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; };
-static Object objects[1000], backgrounds[100];
+static Object objects[1000], backgrounds[200], icons[200];
+static int icon_count=0, wishes=0;
+static std::string wished_entity, wished_value;
+static bool wish_ok=true;
 static int background_count=0, background_writes=0;
 static Object &object(lv_obj_t *p) { return *reinterpret_cast<Object *>(p); }
 static int used = 0;
@@ -48,15 +51,23 @@ Plugin::Plugin() = default;
 void Plugin::add_tile(const char *, std::function<Tile *()>) {}
 Point tap_point() { return point; }
 uint32_t send(const Plugin *, JsonObjectConst data) { request.set(data); return ++next_re; }
+bool wish(const std::string &entity, Wish field, const std::string &value) {
+  assert(field == Wish::PLAYING); ++wishes; wished_entity=entity; wished_value=value; return wish_ok;
+}
 namespace ui {
 lv_obj_t *block(lv_obj_t *, theme::Role role) { auto &o=backgrounds[background_count++]; o.background=true; o.role=role; return reinterpret_cast<lv_obj_t *>(&o); }
 void set_fill(lv_obj_t *p, Tone, theme::Role role) { object(p).role=role; }
 const lv_font_t *font(Font) { static lv_font_t face{}; face.line_height=20; return &face; }
-lv_obj_t *text(lv_obj_t *, Font, theme::Role) { return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
+lv_obj_t *text(lv_obj_t *parent, Font font, theme::Role) {
+  auto &o=font == Font::ICON_SMALL ? icons[icon_count++] : objects[used++];
+  o.parent=parent;
+  return reinterpret_cast<lv_obj_t *>(&o);
+}
 lv_obj_t *label(lv_obj_t *p, Font f, theme::Role role) { return text(p,f,role); }
 lv_obj_t *picture(lv_obj_t *, Placeholder p) { objects[used].no_placeholder = p == Placeholder::NONE; return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
 void set_picture(lv_obj_t *p, const std::string &url, Fit, Turn turn, bool mirror) { object(p).source=url; object(p).turn=turn; object(p).mirror=mirror; }
 void set_color(lv_obj_t *, theme::Role) {}
+std::string icon(uint32_t glyph) { return std::to_string(glyph); }
 void slide_pictures(int dx, uint32_t ms) { ++slides; slide_dx=dx; slide_ms=ms; }
 }
 }
@@ -229,7 +240,7 @@ int main() {
     reply(plugin,next_re,"episode",0,3,"/episode",true,false);
     assert(header.text == "Reihen" && title.text == "same_album");
     tile.on_picture(nullptr,tessera::PictureState::SHOWN);
-    assert(header.text == "< Zurueck" && title.text == "episode");
+    assert(header.hidden && title.text == "episode");
     point={200,120};tile.on_tap();assert(note.text == "Starte ...");
     reply(plugin,next_re,"episode",0,3,"/episode");assert(note.text == "Wiedergabe gestartet");
     point={399,120};tile.on_tap();
@@ -283,5 +294,69 @@ int main() {
     assert(!title.hidden && note.text.empty());
   }
   assert(plugin.tiles.empty());  // late replies cannot reference destroyed tiles
-  std::cout << "Actual C++ tile: routing, navigation, isolation, playback timeout, compact geometry, cover-flow timing, seven-place flow, application errors, silent loading, stable background, larger covers and destruction passed\n";
+  {
+    // Configurable per-tile heading and round Back switch only when the art is ready.
+    const int first=used, keys=background_count;
+    opts["heading"]="Mirellas Hoerspiele";context.options=opts.as<JsonObjectConst>();
+    context.width=400;context.height=380;
+    LibraryTile tile(&plugin);tile.create(context);
+    auto &header=objects[first], &back=backgrounds[keys+1];
+    assert(header.text == "Mirellas Hoerspiele" && back.hidden);
+    tile.on_tick(0);reply(plugin,next_re,"series",0,3,"/root");
+    point={200,120};tile.on_tap();reply(plugin,next_re,"episode",0,2,"/child",true,false);
+    assert(!header.hidden && back.hidden);
+    tile.on_picture(nullptr,tessera::PictureState::SHOWN);
+    assert(header.hidden && !back.hidden && back.width == back.height);
+    point={back.x+back.width/2,back.y+back.height/2};tile.on_tap();
+    reply(plugin,next_re,"series",0,3,"/root");
+    assert(!header.hidden && back.hidden);
+    // Blank header space is not an invisible Open/Play hit target.
+    auto before=next_re;point={200,10};tile.on_tap();assert(next_re == before);
+  }
+  {
+    // Footer buttons route independently of browsing and never submit episode play.
+    const int keys=background_count, first_icon=icon_count;
+    LibraryTile tile(&plugin);tile.create(context);
+    auto &media=backgrounds[keys+2], &play=backgrounds[keys+3];
+    auto &play_icon=icons[first_icon+2];
+    assert(media.width >= 40 && play.width >= 40);
+    assert(play.x+play.width <= context.width && play.y+play.height <= context.height);
+    const auto browse_re=next_re;
+    int opened=0;std::string opened_entity;
+    plugin.set_media_opener([&](const std::string &entity) { ++opened;opened_entity=entity;return true; });
+    point={media.x+media.width/2,media.y+media.height/2};tile.on_tap();
+    assert(opened == 1 && opened_entity == context.entity && next_re == browse_re);
+    tile.on_tick(0);const auto pending_re=next_re; // controls also work during browse
+    JsonDocument state;state["state"]="playing";tile.on_state(state.as<JsonObjectConst>());
+    assert(play_icon.text == std::to_string(0xF03E4));
+    const auto count=wishes;now_ms+=500;
+    point={play.x+play.width/2,play.y+play.height/2};tile.on_tap();
+    assert(wishes == count+1 && wished_entity == context.entity && wished_value == "0");
+    tile.on_tap();assert(wishes == count+1); // suppress accidental double toggle
+    now_ms+=500;state["state"]="paused";tile.on_state(state.as<JsonObjectConst>());
+    assert(play_icon.text == std::to_string(0xF040A));
+    tile.on_tap();assert(wishes == count+2 && wished_value == "1" && next_re == pending_re);
+    now_ms+=500;state["state"]="unavailable";tile.on_state(state.as<JsonObjectConst>());
+    tile.on_tap();assert(wishes == count+2 && status == "Player nicht erreichbar");
+    state["state"]="paused";tile.on_state(state.as<JsonObjectConst>());wish_ok=false;
+    tile.on_tap();assert(status == "Steuerung nicht verbunden");wish_ok=true;
+    reply(plugin,next_re,"series",0,3);
+    plugin.set_media_opener([](const std::string &) { return false; });
+    point={media.x+10,media.y+10};tile.on_tap();assert(status == "Medienkachel fuer Player fehlt");
+    assert(next_re == pending_re);
+    plugin.set_media_opener({});
+  }
+  for (auto shape : {std::pair<int,int>{180,100}, {400,100}, {180,380}}) {
+    const int keys=background_count;
+    context.width=shape.first;context.height=shape.second;
+    LibraryTile tile(&plugin);tile.create(context);
+    assert(background_count == keys+2); // surface + Back; no footer buttons
+  }
+  {
+    context.width=400;context.height=380;context.entity="";
+    const int keys=background_count;
+    LibraryTile tile(&plugin);tile.create(context);
+    assert(background_count == keys+2); // YAML-only player cannot open a core card
+  }
+  std::cout << "Actual C++ tile: navigation/isolation, cover geometry, silent loading, errors, configurable heading, round Back, player controls/state, native media routing and destruction passed\n";
 }

@@ -5,7 +5,9 @@
     "tile_name": "Kidsplayer",
     "tile_example": "Choose a series",
     "library": "Library ID",
-    "library_hint": "Named library in /config/kidsplayer.yaml; player is selected on this tile."
+    "library_hint": "Named library in /config/kidsplayer.yaml; player is selected on this tile.",
+    "heading": "Heading",
+    "heading_hint": "Text above the series, e.g. My audio library (max. 64 characters)."
   },
   "screen": {}
 }

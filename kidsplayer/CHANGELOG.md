@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.7
+
+- Add a per-tile Heading text option, defaulting to Reihen, and a circular Back arrow on the episode level.
+- Add circular native media-controls and Play/Pause buttons on tiles at least 280 × 220 reference pixels with an Inspector player.
+- Reuse Tessera's existing media detail card via a small codegen adapter; the same player needs a normal media tile anywhere in the layout. No page switch or core patch.
+- Use Tessera's optimistic PLAYING wish for the existing queue; never restart an episode to resume playback. Follow Home Assistant state for the icon and handle unavailable players/send failures.
+- Reserve footer space for buttons and titles, preserve silent artwork changes and independent tile navigation.
+- Firmware-only update. HA companion stays on 0.1.7; library YAML is unchanged. The native-card adapter depends on the inspected Tessera core internals (API 0.24).
+
 ## 0.1.6
 
 - Add a stable plugin-local background matching the host's normal tile colour, masking touch darkening within the cover area without changing the core or other tiles.

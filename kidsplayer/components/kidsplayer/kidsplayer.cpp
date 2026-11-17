@@ -15,6 +15,7 @@ class LibraryTile : public tessera::Tile {
   }
   void create(const tessera::TileContext &c) override {
     library_ = tessera::Text(c.options["library"] | "");
+    heading_ = tessera::Text(c.options["heading"] | "Reihen");
     player_ = tessera::Text(c.entity ? c.entity : "");
     w_ = c.width; h_ = c.height;
     parent_ = c.parent;
@@ -26,19 +27,24 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_size(background_, w_, h_);
     paint_background();
     header_ = ui::label(c.parent, tessera::Font::BODY, theme::INK);
-    lv_obj_set_pos(header_, 6, 2);
     lv_obj_set_width(header_, w_ - 12);
-    lv_label_set_text(header_, "Reihen");
+    lv_label_set_long_mode(header_, LV_LABEL_LONG_DOT);
+    lv_label_set_text(header_, plain(heading_).c_str());
     // One-row tiles are also the intermediate step when dragging a 1x1 to 2x2.
     // Keep the back header and status clear; compact tiles omit the title row.
     compact_ = h_ < 160;
-    y_ = compact_ ? std::min(28, h_ / 3) : std::max(ui::px(28), ui::line_height(tessera::Font::BODY) + ui::px(6));
+    const int back_size = std::min(ui::px(40), h_ / 3);
+    y_ = std::max(back_size + 2, ui::line_height(tessera::Font::BODY) + 4);
+    lv_obj_set_pos(header_, 6, (y_ - ui::line_height(tessera::Font::BODY)) / 2);
+    controls_ = w_ >= ui::px(280) && h_ >= ui::px(220) && !player_.empty();
     mirror_ = !compact_;
     // One footer alternates between title and status. Keep the entire cover
     // above it; only the reflection may extend behind the footer.
     const int width_ = w_, height_ = h_ - y_, gap_ = ui::px(6);
     const int text = std::max(ui::line_height(tessera::Font::TITLE), ui::line_height(tessera::Font::BODY)) + ui::px(4);
-    const int room = std::max(1, height_ - text - gap_);
+    const int button = ui::px(44), button_gap = ui::px(8), margin = ui::px(4);
+    const int footer = controls_ ? std::max(text, button + margin) : text;
+    const int room = std::max(1, height_ - footer - gap_);
     int h = mirror_ ? std::min(room * 100 / (100 + tessera::MIRROR_PERCENT / 2), height_ * 100 / (100 + tessera::MIRROR_PERCENT))
                     : room;
     // Leave each inner neighbour at least a quarter of the centre width.
@@ -47,7 +53,7 @@ class LibraryTile : public tessera::Tile {
     h = std::min(h, width_cap);
     size_ = std::max(8, h);
     frame_h_ = mirror_ ? size_ * (100 + tessera::MIRROR_PERCENT) / 100 : size_;
-    const int frame_area = compact_ ? height_ - text : height_;
+    const int frame_area = compact_ ? height_ - footer : height_;
     frame_y_ = y_ + std::max(0, (frame_area - frame_h_) / 2);
     x_ = (w_ - size_) / 2;
     const int w = size_, centre_x_ = x_;
@@ -74,17 +80,37 @@ class LibraryTile : public tessera::Tile {
       lv_obj_set_size(f.place, f.w, frame_h_);
       slots_.push_back(f);
     }
+    back_ = make_key(c.parent, margin, 0, back_size, 0xF004D);
+    visible(back_, false);
+    if (controls_) {
+      media_ = make_key(c.parent, w_ - margin - 2 * button - button_gap,
+                        h_ - margin - button, button, 0xF01D8);
+      playback_ = make_key(c.parent, w_ - margin - button,
+                           h_ - margin - button, button, 0xF040E);
+    }
+    const int words_width = controls_ ? media_.x - margin - 4 : w_ - 8;
+    const int words_y = h_ - footer + (footer - text) / 2;
     title_ = ui::label(c.parent, compact_ ? tessera::Font::BODY : tessera::Font::TITLE, theme::INK);
-    lv_obj_set_pos(title_, 4, h_ - text);
-    lv_obj_set_width(title_, w_ - 8);
+    lv_obj_set_pos(title_, 4, words_y);
+    lv_obj_set_width(title_, words_width);
     lv_label_set_long_mode(title_, LV_LABEL_LONG_DOT);
     lv_obj_set_style_text_align(title_, LV_TEXT_ALIGN_CENTER, 0);
     if (compact_) lv_obj_add_flag(title_, LV_OBJ_FLAG_HIDDEN);
     status_ = ui::label(c.parent, tessera::Font::BODY, theme::MUTED);
-    lv_obj_set_pos(status_, 4, h_ - text);
-    lv_obj_set_width(status_, w_ - 8);
+    lv_obj_set_pos(status_, 4, words_y);
+    lv_obj_set_width(status_, words_width);
     lv_label_set_long_mode(status_, LV_LABEL_LONG_DOT);
     show_status("");
+  }
+  void on_state(JsonObjectConst data) override {
+    const char *state = data["state"] | "";
+    player_playing_ = std::string(state) == "playing";
+    player_unavailable_ = std::string(state) == "unavailable" || std::string(state) == "unknown";
+    if (playback_.icon) {
+      const uint32_t glyph = player_playing_ ? 0xF03E4 : !*state ? 0xF040E : 0xF040A;
+      lv_label_set_text(playback_.icon, ui::icon(glyph).c_str());
+      ui::set_color(playback_.icon, player_unavailable_ ? theme::MUTED : theme::INK);
+    }
   }
   void on_tick(uint32_t) override {
     paint_background();
@@ -105,12 +131,28 @@ class LibraryTile : public tessera::Tile {
     if (!pending_ && !awaiting_picture_ && ((!loaded_ && !failed_) || (!failed_ && now - refreshed_ > 30000))) request(false);
   }
   void on_tap() override {
-    if (pending_ || awaiting_picture_) return;
     auto p = tessera::tap_point();
-    if (p.x < 0 || p.y < 0) return;
-    if (p.y < y_ && !category_.empty()) {
+    if (p.x < 0 || p.y < 0 || p.x >= w_ || p.y >= h_) return;
+    // Player controls remain usable while metadata/artwork is on its way.
+    if (controls_ && media_.contains(p)) {
+      if (!plugin_->open_media(plain(player_))) show_status("Medienkachel fuer Player fehlt");
+      return;
+    }
+    if (controls_ && playback_.contains(p)) {
+      const uint32_t now = esphome::millis();
+      if (control_sent_ && now - control_sent_ < 400) return;
+      if (player_unavailable_) { show_status("Player nicht erreichbar"); return; }
+      // Operate the current queue; never resend kidsplayer/play on resume.
+      if (!tessera::wish(plain(player_), tessera::Wish::PLAYING, player_playing_ ? "0" : "1"))
+        show_status("Steuerung nicht verbunden");
+      else control_sent_ = now;
+      return;
+    }
+    if (pending_ || awaiting_picture_) return;
+    if (!category_.empty() && back_.contains(p)) {
       category_ = tessera::Text(); index_ = saved_; request(false); return;
     }
+    if (p.y < y_) return;
     if (failed_ || !loaded_) { request(false); return; }
     if (p.x < x_) { index_ = (index_ + total_ - 1) % total_; move(1); return; }
     if (p.x >= x_ + size_) { index_ = (index_ + 1) % total_; move(-1); return; }
@@ -140,7 +182,7 @@ class LibraryTile : public tessera::Tile {
     selected_ = tessera::Text(data["center"]["id"] | "");
     const char *keys[] = {"left3", "left2", "left", "center", "right", "right2", "right3"};
     pending_title_ = tessera::Text((data["show_titles"] | true) ? (data["center"]["title"] | "") : "");
-    pending_header_ = tessera::Text(category_.empty() ? "Reihen" : "< Zurueck");
+    pending_back_ = !category_.empty();
     awaiting_picture_ = false;
     picture_sent_ = esphome::millis();
     for (auto &slot : slots_) {
@@ -177,8 +219,39 @@ class LibraryTile : public tessera::Tile {
     background_custom_ = false;
     ui::set_fill(background_, tessera::Tone::NORMAL, theme::CARD);
     ui::set_color(title_, theme::INK); ui::set_color(header_, theme::INK); ui::set_color(status_, theme::MUTED);
+    for (auto *key : {&back_, &media_, &playback_}) {
+      if (!key->body) continue;
+      ui::set_fill(key->body, tessera::Tone::NORMAL, theme::KEY);
+      ui::set_color(key->icon, key == &playback_ && player_unavailable_ ? theme::MUTED : theme::INK);
+    }
   }
  private:
+  struct RoundKey {
+    lv_obj_t *body = nullptr, *icon = nullptr;
+    int x = 0, y = 0, size = 0;
+    bool contains(tessera::Point p) const {
+      // A generous square touch area around the visible circle.
+      return body && p.x >= x && p.x < x + size && p.y >= y && p.y < y + size;
+    }
+  };
+  static RoundKey make_key(lv_obj_t *parent, int x, int y, int size, uint32_t glyph) {
+    RoundKey key;
+    key.x = x; key.y = y; key.size = size;
+    key.body = ui::block(parent, theme::KEY);
+    lv_obj_set_pos(key.body, x, y);
+    lv_obj_set_size(key.body, size, size);
+    lv_obj_set_style_radius(key.body, LV_RADIUS_CIRCLE, 0);
+    key.icon = ui::label(key.body, tessera::Font::ICON_SMALL, theme::INK);
+    lv_label_set_text(key.icon, ui::icon(glyph).c_str());
+    lv_obj_set_width(key.icon, size);
+    lv_obj_set_pos(key.icon, 0, (size - ui::line_height(tessera::Font::ICON_SMALL)) / 2);
+    lv_obj_set_style_text_align(key.icon, LV_TEXT_ALIGN_CENTER, 0);
+    return key;
+  }
+  static void visible(const RoundKey &key, bool show) {
+    if (show) lv_obj_remove_flag(key.body, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_add_flag(key.body, LV_OBJ_FLAG_HIDDEN);
+  }
   void show_status(const char *message) {
     lv_label_set_text(status_, message);
     if (compact_ || *message) lv_obj_add_flag(title_, LV_OBJ_FLAG_HIDDEN);
@@ -213,7 +286,9 @@ class LibraryTile : public tessera::Tile {
   }
   void commit_browse() {
     awaiting_picture_ = false;
-    lv_label_set_text(header_, plain(pending_header_).c_str());
+    if (pending_back_) lv_obj_add_flag(header_, LV_OBJ_FLAG_HIDDEN);
+    else lv_obj_remove_flag(header_, LV_OBJ_FLAG_HIDDEN);
+    visible(back_, pending_back_);
     lv_label_set_text(title_, plain(pending_title_).c_str());
     if (!picture_failed_) show_status("");
   }
@@ -237,13 +312,15 @@ class LibraryTile : public tessera::Tile {
     if (!pending_) { failed_ = true; loaded_ = true; playing_ = false; }
   }
   Kidsplayer *plugin_;
-  tessera::Text library_, player_, category_, selected_, revision_, pending_header_, pending_title_, covers_[2 * SIDE + 1];
+  tessera::Text library_, player_, heading_, category_, selected_, revision_, pending_title_, covers_[2 * SIDE + 1];
+  RoundKey back_, media_, playback_;
   tessera::List<Slot> slots_;
   lv_obj_t *parent_ = nullptr, *background_ = nullptr, *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
   int w_ = 0, h_ = 0, x_ = 0, y_ = 0, frame_y_ = 0, size_ = 0, frame_h_ = 0, index_ = 0, saved_ = 0, total_ = 0;
-  uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0, picture_sent_ = 0;
+  uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0, picture_sent_ = 0, control_sent_ = 0;
   lv_color_t background_color_{};
   bool background_custom_ = false, mirror_ = false, compact_ = false, playing_ = false, loaded_ = false, failed_ = false, awaiting_picture_ = false, picture_failed_ = false;
+  bool controls_ = false, pending_back_ = false, player_playing_ = false, player_unavailable_ = false;
 };
 void Kidsplayer::setup() { add_tile("library", [this]() { return new LibraryTile(this); }); }
 void Kidsplayer::on_message(JsonObjectConst message) { for (auto *tile : tiles) tile->answer(message); }

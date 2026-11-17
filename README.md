@@ -1,4 +1,4 @@
-# Tessera Kidsplayer 0.1.6
+# Tessera Kidsplayer 0.1.7
 
 Aktueller HA-Companion: **0.1.7** (Coverdownload-Korrektur, kein Firmwareupdate erforderlich). [**Fertiges HA-Installationsarchiv herunterladen**](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip).
 

@@ -1,5 +1,5 @@
 id: kidsplayer
-version: 0.1.6
+version: 0.1.7
 api: "0.24"
 icon: album
 maintainer: met-theokoch-schule
@@ -12,16 +12,18 @@ boards: any
 flash_kb: 16
 permissions:
   ha_commands: [kidsplayer/browse, kidsplayer/play]
+  home_assistant_actions: [media_player.media_play_pause]
 tiles:
   - id: library
     name: tile_name
     icon: album
     # Allow one-axis resizing from the editor's initial 1x1 tile.
     sizes: {min: 1x1, max: 4x4}
-    memory: 5600
+    memory: 7200
     pictures: 7
     domains: [media_player]
     has_attributes: [mass_player_type]
     example: tile_example
     options:
       - {id: library, kind: text, label: library, hint: library_hint}
+      - {id: heading, kind: text, label: heading, hint: heading_hint, default: Reihen}
