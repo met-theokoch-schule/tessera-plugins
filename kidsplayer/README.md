@@ -1,6 +1,6 @@
 # Kidsplayer 0.1.6
 
-Aktueller Home-Assistant-Companion: **0.1.7**. Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
+Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
