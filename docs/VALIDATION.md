@@ -180,3 +180,11 @@ Das bereitgestellte SVG wurde mit dem eingecheckten optionalen AppKit-Werkzeug i
 Erfolgreich: 40 Python-Tests, nativer C++-Test mit den echten Tessera API 0.24-/ArduinoJson-/LVGL-Headern und offizieller Tessera-Validator. Der native Test prüft zusätzlich den lokalen A8-Bilddeskriptor (32 × 32, 1024 Bytes), Zentrierung und Skalierung im Knopf, vollständige Farbübernahme und Wechsel zwischen hellem/dunklem `INK`. Der bestehende Hitbereich öffnet weiterhin die originale Medienansicht. Zusätzlich wurde die tatsächliche Kachel mit `LV_USE_IMAGE=0` gegen die realen Header kompiliert; sie verwendet dann einen vorhandenen Lautsprecherglyph.
 
 Die Test-Doubles rendern kein LVGL-Bild auf einem ESP32. Keine vollständige Firmwarekompilierung oder Sichtprüfung auf dem Guition; das ist nach dem Firmwareupdate nötig. Keine Änderung an Home Assistant, dem Companion oder der nativen Tessera-Medienseite.
+
+## Höhere Cover, Spiegelung und Headerfläche 0.1.12
+
+Erfolgreich: nativer C++-Test gegen die echten API-/ArduinoJson-/LVGL-Header, 40 Python-Tests und offizieller Tessera-Validator. Die Geometriefixtures 400 × 250, 400 × 300, 400 × 380 und 400 × 500 prüfen die wieder aktivierte Spiegelung, ausreichend große Cover, vollständige Motivhöhe oberhalb des Titels, Grenzen innerhalb der Kachel und weiterhin sichtbare Nachbarn. Bei den ersten drei Formaten reicht die Coverzeile jetzt absichtlich hinter die Knöpfe; deren höhere Zeichenreihenfolge und weiterhin korrekte Hitbereiche werden geprüft.
+
+Zusätzlich geprüft: Headerfläche in Tessera-Tastenfarbe mit abgerundeten Ecken und Innenabständen, Breite passend zum Text, Zeichenreihenfolge oberhalb der Bilder, gemeinsame Sichtbarkeit von Text/Fläche erst nach Atlaswechsel, versteckte Fläche auf Folgenebene bzw. bei leerem Text, keine Navigation beim Antippen der Überschrift sowie kein Überdecken der Playerknöpfe bei 64 Zeichen langem Text. Bisherige Wiedergabe-, Instanz-, Farbwechsel- und Fehlerprüfungen bestehen weiter.
+
+Keine Pixel-/Hardwareabnahme oder vollständige Firmwarekompilierung; die Tests verwenden UI-Doubles. Die tatsächliche Überlagerung von Bildatlas und LVGL-Elementen sowie die Spiegelung müssen nach dem Firmwareupdate am Guition geprüft werden. Keine Änderung an der laufenden Home-Assistant-/Tessera-Installation oder am Companion 0.1.7.

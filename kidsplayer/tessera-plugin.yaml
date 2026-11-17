@@ -1,5 +1,5 @@
 id: kidsplayer
-version: 0.1.11
+version: 0.1.12
 api: "0.24"
 icon: album
 maintainer: met-theokoch-schule
@@ -19,7 +19,7 @@ tiles:
     icon: album
     # Allow one-axis resizing from the editor's initial 1x1 tile.
     sizes: {min: 1x1, max: 4x4}
-    memory: 7200
+    memory: 7600
     pictures: 7
     domains: [media_player]
     has_attributes: [mass_player_type]

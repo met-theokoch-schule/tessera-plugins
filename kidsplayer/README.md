@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.11
+# Kidsplayer 0.1.12
 
 Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
@@ -303,3 +303,13 @@ Der runde Knopf für die Tessera-Mediensteuerung oben rechts zeigt jetzt das ber
 Das SVG liegt unverändert unter `assets/homepod-mini.svg`. Eine kleine, bereits erzeugte Alphamaske steckt direkt in der Firmware und erhält ihre Farbe aus dem Tessera-Layout. Dadurch funktioniert das Symbol auch ohne Bilddownload, im hellen und dunklen Design, und belegt keinen der sieben Coverplätze. Für Firmwarevarianten ohne LVGL-Bildunterstützung wird das vorhandene Lautsprechersymbol verwendet. Herkunft, Lizenz und optionale Neuerzeugung der Maske sind in `assets/README.md` beschrieben.
 
 **Update:** Plugin **0.1.11** aktualisieren und die Display-Firmware neu bauen/installieren. Companion **0.1.7**, Bibliothek und Kacheloptionen bleiben unverändert. Für die native Playeransicht ist weiterhin eine normale Tessera-Medienkachel für denselben Player im Layout erforderlich.
+
+## Update auf 0.1.12: Cover höher, Spiegelung und lesbare Überschrift
+
+Die Covergruppe sitzt jetzt höher und darf bis hinter die obere Navigationszeile reichen. Die runden Knöpfe werden über den Bildern gezeichnet; ihre Bedienung hat Vorrang vor dem Cover dahinter. Die Spiegelung ist auf normal hohen Kacheln wieder aktiv. Nur sehr niedrige, kompakte Kacheln verzichten weiterhin darauf. Die große Breitenbegrenzung bleibt erhalten; Titel stehen weiter unten mittig und außerhalb des eigentlichen Covermotivs.
+
+Die konfigurierbare Überschrift erhält eine kleine, hellgraue Fläche mit abgerundeten Ecken und etwas Innenabstand. Ihre Breite folgt dem Text und endet vor den Playerknöpfen. Im dunklen Design verwendet sie passend dazu Tessera's dunkle Tastenfarbe. Beim Öffnen einer Reihe verschwinden Überschrift und Fläche gemeinsam zugunsten des Zurückknopfs; bei leerer Überschrift erscheint keine Fläche. Antippen der Überschrift startet keine Navigation.
+
+Die Cover verwenden weiterhin den vorhandenen Tessera-Bildweg und die unveränderte New-music-Anordnungsschleife. Keine Änderung an der nativen Playeransicht oder am Tessera-Kern.
+
+**Update:** Plugin **0.1.12** aktualisieren und die Display-Firmware neu bauen/installieren. Companion **0.1.7**, Bibliotheks-YAML und Kacheloptionen bleiben unverändert. Höhere Cover, überlagerte Knöpfe, Spiegelung und Überschrift anschließend am Display prüfen.

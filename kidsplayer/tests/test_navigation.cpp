@@ -11,9 +11,9 @@ static std::string status;
 static std::vector<std::string> label_events;
 static int slides=0, slide_dx=0;
 static uint32_t slide_ms=0;
-struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; lv_text_align_t align=LV_TEXT_ALIGN_LEFT; const lv_image_dsc_t *image=nullptr; uint32_t scale=256; lv_color_t recolor{}; lv_opa_t recolor_opa=0; };
+struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; lv_text_align_t align=LV_TEXT_ALIGN_LEFT; const lv_image_dsc_t *image=nullptr; uint32_t scale=256; lv_color_t recolor{}; lv_opa_t recolor_opa=0; int layer=0, radius=0; };
 static Object objects[1000], backgrounds[200], icons[200];
-static int icon_count=0, wishes=0;
+static int icon_count=0, wishes=0, next_layer=0;
 static std::string wished_entity, wished_value;
 static bool wish_ok=true;
 static int background_count=0, background_writes=0;
@@ -22,7 +22,7 @@ static int used = 0;
 namespace esphome { uint32_t millis() { return now_ms; } }
 extern "C" {
 lv_color_t lv_color_hex(uint32_t value) { lv_color_t color{};color.red=value>>16;color.green=value>>8;color.blue=value;return color; }
-lv_obj_t *lv_image_create(lv_obj_t *parent) { auto &o=icons[icon_count++];o.parent=parent;return reinterpret_cast<lv_obj_t *>(&o); }
+lv_obj_t *lv_image_create(lv_obj_t *parent) { auto &o=icons[icon_count++];o.parent=parent;o.layer=++next_layer;return reinterpret_cast<lv_obj_t *>(&o); }
 void lv_image_set_src(lv_obj_t *p, const void *image) { auto &o=object(p);o.image=static_cast<const lv_image_dsc_t *>(image);o.width=o.image->header.w;o.height=o.image->header.h; }
 void lv_image_set_scale(lv_obj_t *p, uint32_t scale) { object(p).scale=scale; }
 void lv_obj_set_style_image_recolor(lv_obj_t *p, lv_color_t color, lv_style_selector_t) { object(p).recolor=color; }
@@ -40,7 +40,8 @@ void lv_obj_set_style_bg_color(lv_obj_t *p, lv_color_t color, lv_style_selector_
   assert(object(p).background && selector == 0); // never change the host tile
   object(p).ground=color; ++background_writes;
 }
-void lv_obj_set_style_radius(lv_obj_t *, int32_t, lv_style_selector_t) {}
+void lv_obj_set_style_radius(lv_obj_t *p, int32_t radius, lv_style_selector_t) { object(p).radius=radius; }
+void lv_obj_move_to_index(lv_obj_t *p, int32_t index) { assert(index == -1);object(p).layer=++next_layer; }
 
 int32_t lv_font_get_line_height(const lv_font_t *font) { return font->line_height; }
 void lv_obj_set_pos(lv_obj_t *p, int32_t x, int32_t y) { object(p).x=x; object(p).y=y; }
@@ -61,16 +62,18 @@ bool wish(const std::string &entity, Wish field, const std::string &value) {
   assert(field == Wish::PLAYING); ++wishes; wished_entity=entity; wished_value=value; return wish_ok;
 }
 namespace ui {
-lv_obj_t *block(lv_obj_t *, theme::Role role) { auto &o=backgrounds[background_count++]; o.background=true; o.role=role; return reinterpret_cast<lv_obj_t *>(&o); }
+lv_obj_t *block(lv_obj_t *, theme::Role role) { auto &o=backgrounds[background_count++]; o.background=true; o.role=role; o.layer=++next_layer;return reinterpret_cast<lv_obj_t *>(&o); }
 void set_fill(lv_obj_t *p, Tone, theme::Role role) { object(p).role=role; }
 const lv_font_t *font(Font) { static lv_font_t face{}; face.line_height=20; return &face; }
 lv_obj_t *text(lv_obj_t *parent, Font font, theme::Role) {
   auto &o=font == Font::ICON_SMALL ? icons[icon_count++] : objects[used++];
   o.parent=parent;
+  o.layer=++next_layer;
   return reinterpret_cast<lv_obj_t *>(&o);
 }
 lv_obj_t *label(lv_obj_t *p, Font f, theme::Role role) { return text(p,f,role); }
-lv_obj_t *picture(lv_obj_t *, Placeholder p) { objects[used].no_placeholder = p == Placeholder::NONE; return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
+int text_width(const std::string &text, Font) { return static_cast<int>(text.size()) * 8; }
+lv_obj_t *picture(lv_obj_t *, Placeholder p) { objects[used].no_placeholder = p == Placeholder::NONE; objects[used].layer=++next_layer;return reinterpret_cast<lv_obj_t *>(&objects[used++]); }
 void set_picture(lv_obj_t *p, const std::string &url, Fit, Turn turn, bool mirror) { object(p).source=url; object(p).turn=turn; object(p).mirror=mirror; }
 void set_color(lv_obj_t *, theme::Role) {}
 std::string icon(uint32_t glyph) { return std::to_string(glyph); }
@@ -137,11 +140,10 @@ int main() {
     assert(request["data"]["category"] == "");
     reply(plugin, next_re, "robin", 0, 2);
   }
-  // Favour the artwork in the user's wide/two-row layout. A tall tile can
-  // retain its reflection; either way the motif must clear header and title.
+  // The raised artwork keeps its reflection; only controls may cover the top.
   struct CoverCase { int width, height, minimum_cover; bool mirror; };
-  for (auto shape : {CoverCase{400,250,160,false}, {400,300,210,false},
-                     {400,380,280,false}, {400,500,280,true}}) {
+  for (auto shape : {CoverCase{400,250,175,true}, {400,300,215,true},
+                     {400,380,280,true}, {400,500,280,true}}) {
     const int first=used, keys=background_count;
     LibraryTile tile(&plugin);context.width=shape.width;context.height=shape.height;
     tile.create(context);
@@ -150,7 +152,11 @@ int main() {
     const int motif_height=center.mirror?center.height*100/(100+tessera::MIRROR_PERCENT):center.height;
     assert(center.width >= shape.minimum_cover && motif_height >= shape.minimum_cover-1);
     assert(center.mirror == shape.mirror);
-    assert(center.y >= backgrounds[keys+3].y+backgrounds[keys+3].height);
+    if (shape.height <= 380) {
+      auto &button=backgrounds[keys+4];
+      assert(center.y < button.y+button.height); // intentional overlap at the top
+      assert(button.layer > center.layer); // controls always render above the artwork
+    }
     assert(center.y+motif_height <= title.y);
     assert(center.y+center.height <= context.height);
     assert(center.x*2+center.width >= context.width-1 && center.x*2+center.width <= context.width);
@@ -307,14 +313,14 @@ int main() {
     host.opacity=LV_OPA_TRANSP;tile.on_tick(0);assert(surface.role == theme::PAGE);
     tile.on_theme();assert(surface.role == theme::CARD);
     context.parent=nullptr;
-    // Use more of the available width; do not sacrifice a large cover for a reflection.
+    tile.on_tick(0);reply(plugin,next_re,"large",0,3,"/large");
+    // Large cover and reflection fit while the motif stays above the title.
     auto &center=objects[used-3], &title=objects[used-2], &note=objects[used-1];
     assert(center.width > context.width*7/10);
     assert(center.width <= (context.width-2*tessera::ui::px(10))*3/4);
     assert(title.y == note.y); // one footer, never two simultaneous overlapping texts
     const int cover_height=center.mirror?center.height*100/(100+tessera::MIRROR_PERCENT):center.height;
     assert(center.y + cover_height <= title.y);
-    tile.on_tick(0);reply(plugin,next_re,"large",0,3,"/large");
     assert(!title.hidden && note.text.empty());
     point={200,120};tile.on_tap();reply(plugin,next_re,"episode",0,3,"/episode");
     point={200,120};tile.on_tap();assert(title.hidden && note.text == "Starte ...");
@@ -329,16 +335,23 @@ int main() {
     opts["heading"]="Mirellas Hoerspiele";context.options=opts.as<JsonObjectConst>();
     context.width=400;context.height=380;
     LibraryTile tile(&plugin);tile.create(context);
-    auto &header=objects[first], &back=backgrounds[keys+1];
-    assert(header.text == "Mirellas Hoerspiele" && back.hidden);
+    auto &header=objects[first], &badge=backgrounds[keys+1], &back=backgrounds[keys+2];
+    assert(header.text == "Mirellas Hoerspiele" && back.hidden && !badge.hidden);
+    assert(badge.role == theme::KEY && badge.radius > 0);
+    assert(badge.width > header.width && badge.height > header.height);
+    assert(header.x > badge.x && header.y > badge.y);
+    assert(badge.width < context.width/2); // size follows text instead of filling the row
+    assert(badge.layer > objects[first+1].layer && header.layer > badge.layer);
     tile.on_tick(0);reply(plugin,next_re,"series",0,3,"/root");
     point={200,120};tile.on_tap();reply(plugin,next_re,"episode",0,2,"/child",true,false);
-    assert(!header.hidden && back.hidden);
+    assert(!header.hidden && !badge.hidden && back.hidden);
     tile.on_picture(nullptr,tessera::PictureState::SHOWN);
-    assert(header.hidden && !back.hidden && back.width == back.height);
+    assert(header.hidden && badge.hidden && !back.hidden && back.width == back.height);
     point={back.x+back.width/2,back.y+back.height/2};tile.on_tap();
     reply(plugin,next_re,"series",0,3,"/root");
-    assert(!header.hidden && back.hidden);
+    assert(!header.hidden && !badge.hidden && back.hidden);
+    const auto root_re=next_re;
+    point={badge.x+badge.width/2,badge.y+badge.height/2};tile.on_tap();assert(next_re == root_re);
     // Blank header space is not an invisible Open/Play hit target.
     auto before=next_re;point={200,10};tile.on_tap();assert(next_re == before);
   }
@@ -347,7 +360,7 @@ int main() {
     // They route independently of browsing and never submit episode play.
     const int keys=background_count, first_icon=icon_count, first=used;
     LibraryTile tile(&plugin);tile.create(context);
-    auto &back=backgrounds[keys+1], &media=backgrounds[keys+2], &play=backgrounds[keys+3];
+    auto &back=backgrounds[keys+2], &media=backgrounds[keys+3], &play=backgrounds[keys+4];
     auto &header=objects[first], &title=objects[used-2], &note=objects[used-1];
     auto &play_icon=icons[first_icon+2];
     auto &media_icon=icons[first_icon+1];
@@ -368,7 +381,8 @@ int main() {
     assert(media.height == back.height && play.height == back.height);
     assert(media.x > context.width/2 && play.x > media.x);
     assert(header.x+header.width < media.x); // long headings cannot cover the buttons
-    assert(media.y+media.height < objects[first+1].y); // cover row stays clear
+    assert(media.y+media.height > objects[first+1].y); // controls overlap raised artwork
+    assert(media.layer > objects[first+1].layer && play.layer > objects[first+1].layer);
     assert(title.x*2+title.width == context.width && title.align == LV_TEXT_ALIGN_CENTER);
     assert(note.x == title.x && note.width == title.width && note.align == LV_TEXT_ALIGN_CENTER);
     assert(play.x+play.width <= context.width && play.y+play.height <= context.height);
@@ -401,13 +415,28 @@ int main() {
     const int keys=background_count;
     context.width=shape.first;context.height=shape.second;
     LibraryTile tile(&plugin);tile.create(context);
-    assert(background_count == keys+2); // surface + Back; no player buttons
+    assert(background_count == keys+3); // surface + heading badge + Back; no player buttons
+  }
+  {
+    // Empty headings leave no grey rectangle; long ones keep clear of controls.
+    context.width=400;context.height=250;
+    opts["heading"]="";context.options=opts.as<JsonObjectConst>();
+    int keys=background_count, first=used;
+    LibraryTile empty(&plugin);empty.create(context);
+    assert(objects[first].hidden && backgrounds[keys+1].hidden);
+    opts["heading"]=std::string(64,'W');context.options=opts.as<JsonObjectConst>();
+    keys=background_count;first=used;
+    LibraryTile long_heading(&plugin);long_heading.create(context);
+    auto &badge=backgrounds[keys+1], &media=backgrounds[keys+3], &header=objects[first];
+    assert(!badge.hidden && badge.x+badge.width < media.x);
+    assert(header.x+header.width < badge.x+badge.width);
+    long_heading.on_theme();assert(badge.role == theme::KEY);
   }
   {
     context.width=400;context.height=380;context.entity="";
     const int keys=background_count;
     LibraryTile tile(&plugin);tile.create(context);
-    assert(background_count == keys+2); // YAML-only player cannot open a core card
+    assert(background_count == keys+3); // YAML-only player cannot open a core card
   }
   std::cout << "Actual C++ tile: navigation/isolation, cover geometry, silent loading, errors, heading, round Back, top-right controls/state, centred titles, native media routing and destruction passed\n";
 }

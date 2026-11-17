@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.12
+
+- Raise the cover group into the navigation row and restore New music's 30% reflection on normal-height tiles.
+- Keep heading and controls above artwork; their hit areas take priority over the partially covered side covers.
+- Add a small rounded, light-grey theme background sized to the configured heading. Hide it with the heading on episode level or when the heading is empty.
+- Keep large cover proportions, centred footer titles and silent artwork changes; compact single-row tiles still omit reflections.
+- Increase declared per-tile memory to 7600 bytes for the additional heading surface.
+- Firmware-only update; Home Assistant companion remains 0.1.7.
+
 ## 0.1.11
 
 - Replace the media-control ellipsis with the user's HomePod mini SVG, embedded as a small alpha image.

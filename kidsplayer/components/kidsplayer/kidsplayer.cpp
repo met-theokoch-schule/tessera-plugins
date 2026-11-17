@@ -28,7 +28,6 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_size(background_, w_, h_);
     paint_background();
     header_ = ui::label(c.parent, tessera::Font::BODY, theme::INK);
-    lv_obj_set_width(header_, w_ - 12);
     lv_label_set_long_mode(header_, LV_LABEL_LONG_DOT);
     lv_label_set_text(header_, plain(heading_).c_str());
     // One-row tiles are also the intermediate step when dragging a 1x1 to 2x2.
@@ -39,27 +38,34 @@ class LibraryTile : public tessera::Tile {
     const int back_size = controls_ ? button : std::min(ui::px(40), h_ / 3);
     const int key_y = controls_ ? margin : 0;
     y_ = std::max(key_y + back_size + ui::px(4), ui::line_height(tessera::Font::BODY) + 4);
-    lv_obj_set_pos(header_, 6, key_y + (back_size - ui::line_height(tessera::Font::BODY)) / 2);
-    if (controls_) lv_obj_set_width(header_, w_ - margin - 2 * button - button_gap - 12);
+    const int heading_padding = ui::px(8), heading_vertical = ui::px(4);
+    const int heading_space = controls_ ? w_ - 2 * margin - 2 * button - button_gap - ui::px(4) : w_ - 2 * margin;
+    heading_width_ = std::max(1, std::min(ui::text_width(plain(heading_), tessera::Font::BODY),
+                                        heading_space - 2 * heading_padding));
+    lv_obj_set_width(header_, heading_width_);
+    heading_width_ += 2 * heading_padding;
+    heading_height_ = ui::line_height(tessera::Font::BODY) + 2 * heading_vertical;
+    heading_y_ = key_y + std::max(0, (back_size - heading_height_) / 2);
+    lv_obj_set_pos(header_, margin + heading_padding, heading_y_ + heading_vertical);
     // One footer alternates between title and status. Keep the entire cover
     // above it; only the reflection may extend behind the footer.
-    const int width_ = w_, height_ = h_ - y_, gap_ = ui::px(6);
+    // Let the upper part of the artwork sit behind the navigation controls.
+    // Moving up recovers room for the original reflection without shrinking it.
+    const int cover_top = compact_ ? y_ : std::max(margin, y_ - ui::px(40));
+    const int width_ = w_, height_ = h_ - cover_top, gap_ = ui::px(6);
     const int text = std::max(ui::line_height(tessera::Font::TITLE), ui::line_height(tessera::Font::BODY)) + ui::px(4);
     const int footer = text;
     const int room = std::max(1, height_ - footer - gap_);
-    // Let the cover use roughly 71% of a wide tile while keeping both inner
-    // neighbours. On shallow tiles the fixed 30% reflection used too much of
-    // the available height: retain it only if it costs at most 10% cover size.
+    // Keep the larger width cap and restore the reflection on normal-height tiles.
     const int width_cap = std::max(8, (width_ - 2 * ui::px(10)) * 3 / 4);
-    const int full_size = std::min(room, width_cap);
     const int reflected_size = std::min(width_cap, std::min(
         room * 100 / (100 + tessera::MIRROR_PERCENT / 2),
         height_ * 100 / (100 + tessera::MIRROR_PERCENT)));
-    mirror_ = !compact_ && reflected_size * 100 >= full_size * 90;
-    size_ = std::max(8, mirror_ ? reflected_size : full_size);
+    mirror_ = !compact_;
+    size_ = std::max(8, mirror_ ? reflected_size : std::min(room, width_cap));
     frame_h_ = mirror_ ? size_ * (100 + tessera::MIRROR_PERCENT) / 100 : size_;
     const int frame_area = mirror_ ? height_ : room;
-    frame_y_ = y_ + std::max(0, (frame_area - frame_h_) / 2);
+    frame_y_ = cover_top + std::max(0, (frame_area - frame_h_) / 2);
     x_ = (w_ - size_) / 2;
     const int w = size_, centre_x_ = x_;
     const int gap = ui::px(10);
@@ -85,6 +91,13 @@ class LibraryTile : public tessera::Tile {
       lv_obj_set_size(f.place, f.w, frame_h_);
       slots_.push_back(f);
     }
+    // Draw the heading and controls after the pictures, above overlapping art.
+    header_background_ = ui::block(c.parent, theme::KEY);
+    lv_obj_set_pos(header_background_, margin, heading_y_);
+    lv_obj_set_size(header_background_, heading_width_, heading_height_);
+    lv_obj_set_style_radius(header_background_, ui::px(8), 0);
+    lv_obj_move_to_index(header_, -1);
+    update_heading();
     back_ = make_key(c.parent, margin, key_y, back_size, 0xF004D);
     visible(back_, false);
     if (controls_) {
@@ -158,7 +171,10 @@ class LibraryTile : public tessera::Tile {
     if (!category_.empty() && back_.contains(p)) {
       category_ = tessera::Text(); index_ = saved_; request(false); return;
     }
-    if (p.y < y_) return;
+    // A heading is a label, even when artwork is visible in the same upper row.
+    if (!pending_back_ && !heading_.empty() && p.x >= ui::px(4) && p.x < ui::px(4) + heading_width_ &&
+        p.y >= heading_y_ && p.y < heading_y_ + heading_height_) return;
+    if (p.y < frame_y_) return;
     if (failed_ || !loaded_) { request(false); return; }
     if (p.x < x_) { index_ = (index_ + total_ - 1) % total_; move(1); return; }
     if (p.x >= x_ + size_) { index_ = (index_ + 1) % total_; move(-1); return; }
@@ -224,6 +240,7 @@ class LibraryTile : public tessera::Tile {
   void on_theme() override {
     background_custom_ = false;
     ui::set_fill(background_, tessera::Tone::NORMAL, theme::CARD);
+    ui::set_fill(header_background_, tessera::Tone::NORMAL, theme::KEY);
     ui::set_color(title_, theme::INK); ui::set_color(header_, theme::INK); ui::set_color(status_, theme::MUTED);
     for (auto *key : {&back_, &media_, &playback_}) {
       if (!key->body) continue;
@@ -238,6 +255,13 @@ class LibraryTile : public tessera::Tile {
     }
   }
  private:
+  void update_heading() {
+    const bool show = !pending_back_ && !heading_.empty();
+    for (auto *object : {header_, header_background_}) {
+      if (show) lv_obj_remove_flag(object, LV_OBJ_FLAG_HIDDEN);
+      else lv_obj_add_flag(object, LV_OBJ_FLAG_HIDDEN);
+    }
+  }
   struct RoundKey {
     lv_obj_t *body = nullptr, *icon = nullptr;
     int x = 0, y = 0, size = 0;
@@ -312,8 +336,7 @@ class LibraryTile : public tessera::Tile {
   }
   void commit_browse() {
     awaiting_picture_ = false;
-    if (pending_back_) lv_obj_add_flag(header_, LV_OBJ_FLAG_HIDDEN);
-    else lv_obj_remove_flag(header_, LV_OBJ_FLAG_HIDDEN);
+    update_heading();
     visible(back_, pending_back_);
     lv_label_set_text(title_, plain(pending_title_).c_str());
     if (!picture_failed_) show_status("");
@@ -341,8 +364,9 @@ class LibraryTile : public tessera::Tile {
   tessera::Text library_, player_, heading_, category_, selected_, revision_, pending_title_, covers_[2 * SIDE + 1];
   RoundKey back_, media_, playback_;
   tessera::List<Slot> slots_;
-  lv_obj_t *parent_ = nullptr, *background_ = nullptr, *header_ = nullptr, *title_ = nullptr, *status_ = nullptr;
+  lv_obj_t *parent_ = nullptr, *background_ = nullptr, *header_ = nullptr, *header_background_ = nullptr, *title_ = nullptr, *status_ = nullptr;
   int w_ = 0, h_ = 0, x_ = 0, y_ = 0, frame_y_ = 0, size_ = 0, frame_h_ = 0, index_ = 0, saved_ = 0, total_ = 0;
+  int heading_width_ = 0, heading_height_ = 0, heading_y_ = 0;
   uint32_t pending_ = 0, sent_ = 0, refreshed_ = 0, picture_sent_ = 0, control_sent_ = 0;
   lv_color_t background_color_{};
   bool background_custom_ = false, mirror_ = false, compact_ = false, playing_ = false, loaded_ = false, failed_ = false, awaiting_picture_ = false, picture_failed_ = false;
