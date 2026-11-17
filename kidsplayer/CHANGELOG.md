@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.10
+
+- Keep Tessera's default rounded corners on the stable plugin background instead of overriding the radius to zero.
+- Let the native pressed tile rim remain visible around the rounded surface while keeping the cover area steady.
+- Firmware-only visual update; Home Assistant companion remains 0.1.7.
+
 ## 0.1.9
 
 - Increase the main cover width cap to three quarters of the width after side gaps (about 71% of a 400 px tile).

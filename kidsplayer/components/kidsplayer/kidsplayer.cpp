@@ -21,8 +21,8 @@ class LibraryTile : public tessera::Tile {
     parent_ = c.parent;
     // The host presses its card, but its atlas keeps the unpressed ground colour.
     // A non-interactive local surface keeps the image area visually steady.
+    // Keep block's Tessera-rounded corners so the host's pressed rim stays visible.
     background_ = ui::block(c.parent, theme::CARD);
-    lv_obj_set_style_radius(background_, 0, 0);
     lv_obj_set_pos(background_, 0, 0);
     lv_obj_set_size(background_, w_, h_);
     paint_background();

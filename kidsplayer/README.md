@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.9
+# Kidsplayer 0.1.10
 
 Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
@@ -289,3 +289,9 @@ Bei einer breiten, niedrigen Kachel wird die Spiegelung weggelassen, wenn sie me
 Beispiele aus dem nativen Test mit 20 Pixel hohen Schrift-Fixtures: **400 × 250** Inhaltspixel zeigen ein **168 × 168** großes Mittelcover; **400 × 300** zeigen **218 × 218**; **400 × 380** zeigen **285 × 285**. Bei **400 × 500** passen 285 Pixel Cover plus Spiegelung. Die tatsächlichen Werte auf dem Display hängen von Tessera-Schriftgrößen, Skalierung und nutzbarer Kachelfläche ab. Die Tests ersetzen keine visuelle Abnahme am Guition.
 
 **Update:** Plugin **0.1.9** laden und die Display-Firmware neu bauen/installieren. Die Kachelgröße und Bibliotheks-YAML können bleiben. Companion **0.1.7** und das HA-ZIP müssen nicht erneut installiert werden. Dieses Update enthält auch die oberen Playerknöpfe und die mittigen Titel aus 0.1.8; stehen die Knöpfe noch unten, läuft diese Änderung noch nicht in der installierten Display-Firmware.
+
+## Update auf 0.1.10: Abgerundeter Hintergrund
+
+Die ruhige Hintergrundfläche hinter den Covern verwendet nun die standardmäßig abgerundeten Ecken von Tessera's `ui::block`. Die bisherige Vorgabe für rechteckige Ecken entfällt. Dadurch bleibt an den Ecken bzw. am äußeren Rand beim Antippen die graue Rückmeldung der Tessera-Kachel sichtbar, während der Hintergrund im Coverbereich seine normale Farbe behält. Farbe, Größe und Bedienung bleiben unverändert; der Hintergrund folgt weiterhin dem hellen/dunklen Tessera-Layout.
+
+Plugin **0.1.10** aktualisieren und die Display-Firmware neu bauen/installieren. Der HA-Companion **0.1.7**, die Bibliotheksdatei und das Layout benötigen keine Änderung. Die Rundung und die Rückmeldung beim Antippen anschließend am Display prüfen.

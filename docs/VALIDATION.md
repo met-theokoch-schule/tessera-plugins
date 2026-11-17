@@ -166,3 +166,9 @@ Der Benutzer bestätigte, dass bislang keine normale Medienkachel für den Playe
 Der native Test der tatsächlichen Kachel ist um die Formate 400 × 250, 400 × 300, 400 × 380 und 400 × 500 erweitert. Geprüft werden eine größere Motivkante, Bild-/Spiegelungsgrenzen innerhalb der Kachel, freie Header-/Titelzeile, zentriertes Mittelcover und zwei sichtbare innere Nachbarn. Die ersten drei Formate verzichten zugunsten des Motivs auf die Spiegelung; im letzten bleibt sie erhalten. Gemessene Mittelcover im Test: 168, 218, 285 und 285 Pixel, beim letzten zusätzlich 30% Spiegelung. Die Font-Fixture verwendet 20 Pixel Zeilenhöhe; reale Displaywerte können abweichen. Vorhandene Navigation, Instanztrennung und Touch-/Playersteuerung bestehen weiter.
 
 40 Python-Tests inklusive unverändertem New-music-Referenzblock und Wiedergabefällen sowie offizieller Tessera-Validator erfolgreich. Kein vollständiger Firmwarebau und keine Grafikabnahme auf dem Guition. Die Änderung betrifft nur Plugin 0.1.9; HA-Companion 0.1.7 bleibt unverändert. Das Benutzerfoto zeigt noch die Knöpfe unten; 0.1.9 enthält die bereits in 0.1.8 umgesetzte obere Position und mittigen Titel.
+
+## Abgerundete Hintergrundfläche 0.1.10
+
+Die Änderung entfernt ausschließlich den Radius-Override auf null von der pluginlokalen Hintergrundfläche. Der untersuchte Tessera-Kern setzt für `ui::block` bereits einen zur Ansicht passenden Radius (`ui::px(large ? 12 : 8)`). Es werden keine Host-Styles verändert; die native Rand-Rückmeldung bleibt erhalten.
+
+Bestehender nativer C++-Test und offizieller Tessera-Validator erfolgreich. Die Hintergrundtests prüfen weiterhin das unveränderte Host-Objekt, stabile normale Farben beim Drücken und Theme-Wechsel. Die Test-Doubles rendern keine Rundungen; Form und Randwirkung sind am Display abzunehmen. Kein vollständiger Firmwarebau. Keine Änderungen am HA-Companion oder an der laufenden Installation.
