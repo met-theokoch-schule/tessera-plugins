@@ -7,7 +7,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 root = Path(__file__).resolve().parents[1]
 source = root / 'kidsplayer/backend/custom_components/kidsplayer'
-required = ('__init__.py', 'manifest.json', 'library.py', 'playback.py', 'compat.py')
+required = ('__init__.py', 'manifest.json', 'library.py', 'playback.py', 'compat.py', 'images.py')
 
 
 def main():

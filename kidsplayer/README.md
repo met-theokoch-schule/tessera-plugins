@@ -1,5 +1,7 @@
 # Kidsplayer 0.1.6
 
+Aktueller Home-Assistant-Companion: **0.1.7**. Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
+
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt „Zurueck“ zur Reihenebene. Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
 **Status:** Beta-Implementierung mit Mocktests und ausgeführten nativen C++-Navigationstests. Home Assistant und Hardware wurden nicht gestartet. Die Installationsschritte sind für einen anschließenden Test beschrieben, nicht bereits auf deinem Display ausgeführt.
@@ -192,17 +194,18 @@ Diese Dateien müssen direkt in **Home Assistant's** `/config/custom_components/
 ├── manifest.json
 ├── library.py
 ├── playback.py
-└── compat.py
+├── compat.py
+└── images.py
 ```
 
 Der Tessera-Pluginordner `/config/tessera-plugins/kidsplayer/` allein genügt nicht. Ebenso falsch wäre eine zusätzliche Ebene wie `/config/custom_components/kidsplayer/backend/custom_components/kidsplayer/`.
 
-Ein passendes Installationsarchiv lässt sich auf dem Entwicklungsrechner mit `python3 tools/package-companion.py /tmp/kidsplayer-ha-companion-0.1.4.zip` erzeugen. Es enthält ausschließlich den Companion und seine Lizenz mit dem Wurzelordner `custom_components/`, keine Audioinhalte, Zugangsdaten oder Firmware.
+Ein passendes Installationsarchiv lässt sich auf dem Entwicklungsrechner mit `python3 tools/package-companion.py /tmp/kidsplayer-ha-companion-0.1.7.zip` erzeugen. Es enthält ausschließlich den Companion und seine Lizenz mit dem Wurzelordner `custom_components/`, keine Audioinhalte, Zugangsdaten oder Firmware.
 
-ZIP auf den HA-Rechner nach `/config/kidsplayer-ha-companion-0.1.4.zip` kopieren und im HA-Terminal ausführen:
+ZIP auf den HA-Rechner nach `/config/kidsplayer-ha-companion-0.1.7.zip` kopieren und im HA-Terminal ausführen:
 
 ```sh
-unzip -o /config/kidsplayer-ha-companion-0.1.4.zip -d /config
+unzip -o /config/kidsplayer-ha-companion-0.1.7.zip -d /config
 ls -l /config/custom_components/kidsplayer/
 ha core check
 ```
@@ -230,3 +233,15 @@ Das Mittelcover darf jetzt statt 50 % ungefähr 63 % der Inhaltsbreite einnehmen
 Titel und Status verwenden einzeilige Labels und dieselbe Fußzeile: Ohne Meldung erscheint der Titel, bei Wiedergabestart oder Fehler stattdessen die Meldung. Keine zwei Texte überlagern sich. Die Referenz-Schleife für Nachbarn bleibt unverändert; die Begrenzung der Hauptcovergröße wurde auf den ausdrücklichen Wunsch nach größeren Covern angepasst. Bei größeren Mittelcovern passen entsprechend weniger äußere Nachbarn vollständig in die Kachel.
 
 **Nur Plugin 0.1.6 installieren und die Display-Firmware neu bauen.** Companion 0.1.4 und Bibliotheks-YAML bleiben unverändert. Die Änderungen sind nativ gegen die echten API-Header geprüft; Größe und Druckwirkung müssen auf dem Guition visuell abgenommen werden.
+
+## Companion 0.1.7: Automatische Cover / HTTP 500
+
+Im untersuchten Fehlerfall wurden die Bibliothek und eine automatische Coveradresse geliefert, der anschließende HA-Bildabruf antwortete aber mit HTTP 500; lokale Reihenbilder funktionierten weiter. Dabei wurde ein Fehler im bisherigen HTTP-Leser gefunden: `response.content.read(n)` liefert bei aiohttp nicht zwingend das vollständige Bild, sondern gegebenenfalls nur den bereits verfügbaren Anfang. Ein anschließend abgeschnittenes JPEG/PNG kann beim Decodieren fehlschlagen. Die [aiohttp-Dokumentation](https://docs.aiohttp.org/en/stable/streams.html#reading-attributes-and-methods) beschreibt dieses Verhalten ausdrücklich. Der über MCP verfügbare Sammelprotokolleintrag enthält keinen vollständigen Decoder-Traceback; deshalb wird nicht behauptet, dass jede denkbare Ursache für HTTP 500 damit ausgeschlossen ist.
+
+Der neue Leser verarbeitet alle Netzwerkstücke bis zum Dateiende und prüft nach jedem Stück das bestehende 2-MiB-Limit. HTTP-Fehler, Redirects und leere Antworten werden eindeutig erkannt; Redirects werden weiterhin nicht verfolgt. Fehler im HA-Cover-View landen mit Grund bzw. Decoderklasse im Protokoll, ohne die möglicherweise signierte Bild-URL auszugeben. Ein neuer Cache-Schlüssel fordert die Bilder nach dem Update frisch an.
+
+**Nur den HA-Companion aktualisieren:** Den gesamten aktuellen Ordner `backend/custom_components/kidsplayer/` nach `/config/custom_components/kidsplayer/` kopieren, **einschließlich `images.py`**, oder das mit `tools/package-companion.py` erzeugte Companion-0.1.7-Archiv nach `/config` entpacken. Danach Home Assistant neu starten und die betroffene Folge öffnen. Die Bibliothek lädt innerhalb etwa 30 Sekunden ihre neuen Coveradressen. YAML und Display-Firmware bleiben unverändert.
+
+`cover: auto` gilt immer für genau den betreffenden Eintrag. Eine Reihe mit `cover: conni.jpg` bleibt ein lokales Bild, auch wenn ihre Folgen `cover: auto` verwenden. Für ein automatisches Reihenbild dort ebenfalls `auto` setzen. Ganze Album-URIs und vollständig provider-spezifische URIs werden für die Metadatenauflösung verwendet; es gibt keine Titelsuche.
+
+Wenn weiterhin „Cover fehlt“ erscheint, das HA-Protokoll nach **`Kidsplayer-Coverdownload fehlgeschlagen`** bzw. **`Kidsplayer-Covermetadaten fehlen`** filtern. Die neue Meldung unterscheidet zum Beispiel HTTP 403, Zeitüberschreitung und ungültige Bilddaten. Eine erfolgreiche Darstellung auf dem echten Display ist erst nach dem Update und einem erneuten Abruf bestätigt.

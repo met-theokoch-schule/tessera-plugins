@@ -1,5 +1,7 @@
 # Tessera Kidsplayer 0.1.6
 
+Aktueller HA-Companion: **0.1.7** (Coverdownload-Korrektur, kein Firmwareupdate erforderlich).
+
 Kindgerechte Hörspielbibliothek für Tessera und Music Assistant: Reihen und Folgen als verschachtelte Cover-Flows innerhalb einer Kachel. Explizite Tracklisten bleiben geordnet; jede Kachel hat ihre eigene Bibliotheks-ID und ihren eigenen Player.
 
 **Entwicklungsstand:** Implementierung und automatisierte Mocktests vorhanden. Eine echte Home-Assistant-Installation, ESP32-Firmware und Audiowiedergabe wurden in dieser Entwicklungsumgebung nicht ausgeführt. Vor dem Einsatz bitte den Abnahmeplan durchführen.
