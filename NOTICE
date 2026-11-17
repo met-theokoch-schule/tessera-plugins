@@ -18,3 +18,9 @@ compatibility, not copied into the distributed runtime. Tessera firmware is
 AGPL-3.0; installing this MIT plugin does not change the firmware's license.
 Original project license and notice requirements remain applicable when
 redistributing a compiled Tessera firmware.
+
+HomePod mini pictogram (assets/homepod-mini.svg and its generated alpha mask):
+SVG supplied by the user; matches cbi:homepod-mini from Custom Brand Icons.
+https://github.com/elax46/custom-brand-icons
+MIT License, Copyright (c) 2026, as stated in the upstream LICENSE.
+The complete license is preserved in kidsplayer/assets/LICENSE.custom-brand-icons.

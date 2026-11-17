@@ -1,5 +1,6 @@
 // Cover-flow layout and picture API based on New music, Copyright (c) 2026 Max Gramser. MIT.
 #include "kidsplayer.h"
+#include "homepod_mini_icon.h"
 #include <algorithm>
 #include <string>
 namespace esphome::kidsplayer {
@@ -88,7 +89,7 @@ class LibraryTile : public tessera::Tile {
     visible(back_, false);
     if (controls_) {
       media_ = make_key(c.parent, w_ - margin - 2 * button - button_gap,
-                        key_y, button, 0xF01D8);
+                        key_y, button, 0);
       playback_ = make_key(c.parent, w_ - margin - button,
                            key_y, button, 0xF040E);
     }
@@ -227,6 +228,12 @@ class LibraryTile : public tessera::Tile {
     for (auto *key : {&back_, &media_, &playback_}) {
       if (!key->body) continue;
       ui::set_fill(key->body, tessera::Tone::NORMAL, theme::KEY);
+#if LV_USE_IMAGE
+      if (key == &media_) {
+        lv_obj_set_style_image_recolor(key->icon, ui::color(theme::INK), 0);
+        continue;
+      }
+#endif
       ui::set_color(key->icon, key == &playback_ && player_unavailable_ ? theme::MUTED : theme::INK);
     }
   }
@@ -246,8 +253,22 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_pos(key.body, x, y);
     lv_obj_set_size(key.body, size, size);
     lv_obj_set_style_radius(key.body, LV_RADIUS_CIRCLE, 0);
+#if LV_USE_IMAGE
+    if (!glyph) {
+      key.icon = lv_image_create(key.body);
+      lv_obj_remove_flag(key.icon, LV_OBJ_FLAG_CLICKABLE);
+      lv_image_set_src(key.icon, &homepod_mini_image());
+      // Alpha-only artwork follows the palette without another font or decoder.
+      lv_obj_set_style_image_recolor(key.icon, ui::color(theme::INK), 0);
+      lv_obj_set_style_image_recolor_opa(key.icon, LV_OPA_COVER, 0);
+      const int icon_size = std::min(size - ui::px(8), ui::px(28));
+      lv_image_set_scale(key.icon, std::max(1, icon_size) * 256 / 32);
+      lv_obj_set_pos(key.icon, (size - 32) / 2, (size - 32) / 2);
+      return key;
+    }
+#endif
     key.icon = ui::label(key.body, tessera::Font::ICON_SMALL, theme::INK);
-    lv_label_set_text(key.icon, ui::icon(glyph).c_str());
+    lv_label_set_text(key.icon, ui::icon(glyph ? glyph : 0xF04C3).c_str());
     lv_obj_set_width(key.icon, size);
     lv_obj_set_pos(key.icon, 0, (size - ui::line_height(tessera::Font::ICON_SMALL)) / 2);
     lv_obj_set_style_text_align(key.icon, LV_TEXT_ALIGN_CENTER, 0);

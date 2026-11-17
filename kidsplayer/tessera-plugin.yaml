@@ -1,5 +1,5 @@
 id: kidsplayer
-version: 0.1.10
+version: 0.1.11
 api: "0.24"
 icon: album
 maintainer: met-theokoch-schule
@@ -9,7 +9,7 @@ topics: [media, fun]
 requires:
   esphome: 2026.6.2
 boards: any
-flash_kb: 16
+flash_kb: 18
 permissions:
   ha_commands: [kidsplayer/browse, kidsplayer/play]
   home_assistant_actions: [media_player.media_play_pause]

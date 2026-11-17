@@ -172,3 +172,11 @@ Der native Test der tatsächlichen Kachel ist um die Formate 400 × 250, 400 × 
 Die Änderung entfernt ausschließlich den Radius-Override auf null von der pluginlokalen Hintergrundfläche. Der untersuchte Tessera-Kern setzt für `ui::block` bereits einen zur Ansicht passenden Radius (`ui::px(large ? 12 : 8)`). Es werden keine Host-Styles verändert; die native Rand-Rückmeldung bleibt erhalten.
 
 Bestehender nativer C++-Test und offizieller Tessera-Validator erfolgreich. Die Hintergrundtests prüfen weiterhin das unveränderte Host-Objekt, stabile normale Farben beim Drücken und Theme-Wechsel. Die Test-Doubles rendern keine Rundungen; Form und Randwirkung sind am Display abzunehmen. Kein vollständiger Firmwarebau. Keine Änderungen am HA-Companion oder an der laufenden Installation.
+
+## HomePod-mini-Symbol 0.1.11
+
+Das bereitgestellte SVG wurde mit dem eingecheckten optionalen AppKit-Werkzeug in eine 32 × 32 A8-Maske umgewandelt. Die erzeugte PNG-Vorschau wurde betrachtet; eine erneute Erzeugung liefert bytegleich denselben Header (`cmp`). SVG-Quelle und MIT-Lizenzhinweise sind im Repository enthalten. Firmwarebuilds benötigen diesen Generationsschritt nicht.
+
+Erfolgreich: 40 Python-Tests, nativer C++-Test mit den echten Tessera API 0.24-/ArduinoJson-/LVGL-Headern und offizieller Tessera-Validator. Der native Test prüft zusätzlich den lokalen A8-Bilddeskriptor (32 × 32, 1024 Bytes), Zentrierung und Skalierung im Knopf, vollständige Farbübernahme und Wechsel zwischen hellem/dunklem `INK`. Der bestehende Hitbereich öffnet weiterhin die originale Medienansicht. Zusätzlich wurde die tatsächliche Kachel mit `LV_USE_IMAGE=0` gegen die realen Header kompiliert; sie verwendet dann einen vorhandenen Lautsprecherglyph.
+
+Die Test-Doubles rendern kein LVGL-Bild auf einem ESP32. Keine vollständige Firmwarekompilierung oder Sichtprüfung auf dem Guition; das ist nach dem Firmwareupdate nötig. Keine Änderung an Home Assistant, dem Companion oder der nativen Tessera-Medienseite.

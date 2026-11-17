@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.11
+
+- Replace the media-control ellipsis with the user's HomePod mini SVG, embedded as a small alpha image.
+- Follow Tessera's light/dark text colour and retain the existing round button position, hit area and native media opener.
+- Keep the source SVG, upstream MIT notice, generated mask and optional macOS regeneration tool in the repository. No runtime SVG decoder, font or network image request.
+- Use the existing speaker glyph on builds without LVGL image support.
+- Firmware-only update; Home Assistant companion remains 0.1.7.
+
 ## 0.1.10
 
 - Keep Tessera's default rounded corners on the stable plugin background instead of overriding the radius to zero.

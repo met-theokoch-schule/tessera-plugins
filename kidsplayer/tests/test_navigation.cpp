@@ -11,7 +11,7 @@ static std::string status;
 static std::vector<std::string> label_events;
 static int slides=0, slide_dx=0;
 static uint32_t slide_ms=0;
-struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; lv_text_align_t align=LV_TEXT_ALIGN_LEFT; };
+struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; lv_text_align_t align=LV_TEXT_ALIGN_LEFT; const lv_image_dsc_t *image=nullptr; uint32_t scale=256; lv_color_t recolor{}; lv_opa_t recolor_opa=0; };
 static Object objects[1000], backgrounds[200], icons[200];
 static int icon_count=0, wishes=0;
 static std::string wished_entity, wished_value;
@@ -21,6 +21,12 @@ static Object &object(lv_obj_t *p) { return *reinterpret_cast<Object *>(p); }
 static int used = 0;
 namespace esphome { uint32_t millis() { return now_ms; } }
 extern "C" {
+lv_color_t lv_color_hex(uint32_t value) { lv_color_t color{};color.red=value>>16;color.green=value>>8;color.blue=value;return color; }
+lv_obj_t *lv_image_create(lv_obj_t *parent) { auto &o=icons[icon_count++];o.parent=parent;return reinterpret_cast<lv_obj_t *>(&o); }
+void lv_image_set_src(lv_obj_t *p, const void *image) { auto &o=object(p);o.image=static_cast<const lv_image_dsc_t *>(image);o.width=o.image->header.w;o.height=o.image->header.h; }
+void lv_image_set_scale(lv_obj_t *p, uint32_t scale) { object(p).scale=scale; }
+void lv_obj_set_style_image_recolor(lv_obj_t *p, lv_color_t color, lv_style_selector_t) { object(p).recolor=color; }
+void lv_obj_set_style_image_recolor_opa(lv_obj_t *p, lv_opa_t opacity, lv_style_selector_t) { object(p).recolor_opa=opacity; }
 bool lv_color_eq(lv_color_t a, lv_color_t b) { return a.red==b.red && a.green==b.green && a.blue==b.blue; }
 lv_obj_t *lv_obj_get_parent(const lv_obj_t *p) { return object(const_cast<lv_obj_t *>(p)).parent; }
 lv_style_res_t lv_obj_get_local_style_prop(lv_obj_t *p, lv_style_prop_t prop, lv_style_value_t *value, lv_style_selector_t selector) {
@@ -344,6 +350,19 @@ int main() {
     auto &back=backgrounds[keys+1], &media=backgrounds[keys+2], &play=backgrounds[keys+3];
     auto &header=objects[first], &title=objects[used-2], &note=objects[used-1];
     auto &play_icon=icons[first_icon+2];
+    auto &media_icon=icons[first_icon+1];
+    assert(media_icon.image == &homepod_mini_image());
+    assert(media_icon.image->header.cf == LV_COLOR_FORMAT_A8);
+    assert(media_icon.image->header.w == 32 && media_icon.image->header.h == 32);
+    assert(media_icon.image->data_size == 1024 && media_icon.recolor_opa == LV_OPA_COVER);
+    assert(media_icon.x*2+media_icon.width == media.width);
+    assert(media_icon.y*2+media_icon.height == media.height);
+    assert(media_icon.scale > 0 && media_icon.width*media_icon.scale/256 < media.width);
+    const bool previous_dark=theme::dark;
+    theme::dark=false;tile.on_theme();const auto light_ink=media_icon.recolor;
+    theme::dark=true;tile.on_theme();assert(!lv_color_eq(media_icon.recolor,light_ink));
+    assert(lv_color_eq(media_icon.recolor,tessera::ui::color(theme::INK)));
+    theme::dark=previous_dark;tile.on_theme();
     assert(media.width >= 40 && play.width >= 40);
     assert(media.y == back.y && play.y == back.y);
     assert(media.height == back.height && play.height == back.height);
