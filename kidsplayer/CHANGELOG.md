@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.8
+
+- Move the native media and Play/Pause buttons to the top right, with the same size and vertical position as Back.
+- Restore full-width centred series/episode titles and centre the status line; reserve heading width so long headings cannot overlap controls.
+- Remove the button space from the footer and keep the cover artwork below the navigation row.
+- Clarify the missing-native-tile message: a normal media tile for the same Inspector player is required anywhere in the Tessera layout. This prerequisite is unchanged; no Home Assistant configuration is modified.
+- Extend native tests for shared button position/size, centred title/status geometry, heading clearance and control routing.
+- Firmware-only update; HA companion remains 0.1.7.
+
 ## 0.1.7
 
 - Add a per-tile Heading text option, defaulting to Reihen, and a circular Back arrow on the episode level.

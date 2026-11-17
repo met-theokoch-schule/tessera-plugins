@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.7
+# Kidsplayer 0.1.8
 
 Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
@@ -262,3 +262,20 @@ Die beiden Knöpfe benötigen den **Player im Inspector**. Ist nur `player:` in 
 **Installation:** Kidsplayer auf **0.1.7** aktualisieren, Display-Firmware in Tessera neu bauen und installieren. HA-Companion **0.1.7**, Bibliotheksdatei und Cover bleiben unverändert. Danach Überschrift und Player im Inspector einstellen, die normale Medienkachel bei Bedarf ergänzen und das Layout senden. Änderungen an der Überschrift benötigen danach keinen weiteren Firmwarebau.
 
 **Am Display prüfen:** Reihe öffnen, runden Zurückknopf testen, erneut eine Folge starten, mit dem unteren rechten Knopf pausieren und fortsetzen. Die Position muss erhalten bleiben. Mit **⋯** die native Steuerung öffnen und wieder schließen: Dieselbe Folge und Bibliotheksauswahl müssen sichtbar bleiben. Zusätzlich eine kleine Kachel testen: Dort fehlen die beiden unteren Knöpfe absichtlich.
+
+## Update auf 0.1.8: Playerknöpfe oben, Titel mittig
+
+Die Playerknöpfe **⋯** und **Play/Pause** stehen jetzt **oben rechts**, auf derselben Höhe und mit demselben Durchmesser wie der runde Zurückknopf oben links. Die beiden Knöpfe erscheinen weiterhin nur bei ausreichend großer Kachel (mindestens 280 × 220 Tessera-Referenzpixel im Inhaltsbereich) mit einem im Inspector ausgewählten Player. Die konfigurierbare Überschrift erhält Platz links daneben und wird bei langen Texten gekürzt. Auf der Folgenebene bleibt dort nur der Zurückknopf sichtbar.
+
+Die Titel der ausgewählten Reihe und Folge stehen unten wieder **mittig über die volle Kachelbreite**. Auch Wiedergabe- und Fehlermeldungen sind mittig; die Fußzeile hält keinen Platz mehr für Playerknöpfe frei. Cover werden unterhalb der Navigationszeile angeordnet.
+
+**Meldung beim Antippen von ⋯:** `Normale Medienkachel fehlt` bedeutet, dass Kidsplayer zwar seinen Player kennt, aber keine normale Tessera-Medienkachel derselben Entity im Layout findet. Die bisherige Meldung lautete `Medienkachel fuer Player fehlt`. Es handelt sich nicht um eine fehlende URI oder einen Fehler der Bibliotheks-YAML.
+
+1. In Kidsplayer nachsehen, welcher Player im Inspector ausgewählt ist, zum Beispiel `media_player.wohnzimmer`.
+2. Im **Tessera-Layout desselben Displays** eine normale Medienkachel für genau diese Entity hinzufügen. Sie darf auf einer zweiten Seite liegen. Eine Home-Assistant-Dashboardkarte oder eine weitere Kidsplayer-Kachel genügt dafür nicht.
+3. Layout speichern und an das Display senden. Das Hinzufügen der normalen Medienkachel erfordert keinen Firmwarebau.
+4. In Kidsplayer **⋯** antippen. Die echte Tessera-Mediensteuerung öffnet sich über der aktuellen Seite; deren Zurückpfeil führt wieder zur unveränderten Kidsplayer-Auswahl.
+
+Die vorhandene Medienkachel bleibt wegen der technischen Grenze der Plugin-API erforderlich; die Playersteuerung wurde nicht nachgebaut. Kidsplayer selbst wechselt dabei keine Seite. Die bestehende HA-Konfiguration wird nicht verändert.
+
+**Update:** Plugin **0.1.8** laden, Display-Firmware neu bauen/installieren und Layout senden. Companion **0.1.7**, ZIP, Bibliotheks-YAML und Cover bleiben unverändert. Neue Positionen, Titelzentrierung sowie Öffnen/Schließen der Steuerung am Display prüfen.

@@ -11,7 +11,7 @@ static std::string status;
 static std::vector<std::string> label_events;
 static int slides=0, slide_dx=0;
 static uint32_t slide_ms=0;
-struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; };
+struct Object { int x=0, y=0, width=0, height=20; bool hidden=false, mirror=false, no_placeholder=false; tessera::Turn turn=tessera::Turn::NONE; std::string source, text; lv_obj_t *parent=nullptr; lv_color_t ground{}; int opacity=LV_OPA_COVER; theme::Role role=theme::CARD; bool background=false, pressed=false; lv_text_align_t align=LV_TEXT_ALIGN_LEFT; };
 static Object objects[1000], backgrounds[200], icons[200];
 static int icon_count=0, wishes=0;
 static std::string wished_entity, wished_value;
@@ -40,7 +40,7 @@ int32_t lv_font_get_line_height(const lv_font_t *font) { return font->line_heigh
 void lv_obj_set_pos(lv_obj_t *p, int32_t x, int32_t y) { object(p).x=x; object(p).y=y; }
 void lv_obj_set_size(lv_obj_t *p, int32_t w, int32_t h) { object(p).width=w; object(p).height=h; }
 void lv_obj_set_width(lv_obj_t *p, int32_t w) { object(p).width=w; }
-void lv_obj_set_style_text_align(lv_obj_t *, lv_text_align_t, lv_style_selector_t) {}
+void lv_obj_set_style_text_align(lv_obj_t *p, lv_text_align_t align, lv_style_selector_t) { object(p).align=align; }
 void lv_label_set_long_mode(lv_obj_t *, lv_label_long_mode_t) {}
 void lv_label_set_text(lv_obj_t *p, const char *s) { status = s; object(p).text=s; label_events.push_back(s); }
 void lv_obj_add_flag(lv_obj_t *p, lv_obj_flag_t flag) { if (flag == LV_OBJ_FLAG_HIDDEN) object(p).hidden=true; }
@@ -314,12 +314,21 @@ int main() {
     auto before=next_re;point={200,10};tile.on_tap();assert(next_re == before);
   }
   {
-    // Footer buttons route independently of browsing and never submit episode play.
-    const int keys=background_count, first_icon=icon_count;
+    // Top-right buttons share the Back row, leaving full-width centred titles.
+    // They route independently of browsing and never submit episode play.
+    const int keys=background_count, first_icon=icon_count, first=used;
     LibraryTile tile(&plugin);tile.create(context);
-    auto &media=backgrounds[keys+2], &play=backgrounds[keys+3];
+    auto &back=backgrounds[keys+1], &media=backgrounds[keys+2], &play=backgrounds[keys+3];
+    auto &header=objects[first], &title=objects[used-2], &note=objects[used-1];
     auto &play_icon=icons[first_icon+2];
     assert(media.width >= 40 && play.width >= 40);
+    assert(media.y == back.y && play.y == back.y);
+    assert(media.height == back.height && play.height == back.height);
+    assert(media.x > context.width/2 && play.x > media.x);
+    assert(header.x+header.width < media.x); // long headings cannot cover the buttons
+    assert(media.y+media.height < objects[first+1].y); // cover row stays clear
+    assert(title.x*2+title.width == context.width && title.align == LV_TEXT_ALIGN_CENTER);
+    assert(note.x == title.x && note.width == title.width && note.align == LV_TEXT_ALIGN_CENTER);
     assert(play.x+play.width <= context.width && play.y+play.height <= context.height);
     const auto browse_re=next_re;
     int opened=0;std::string opened_entity;
@@ -342,7 +351,7 @@ int main() {
     tile.on_tap();assert(status == "Steuerung nicht verbunden");wish_ok=true;
     reply(plugin,next_re,"series",0,3);
     plugin.set_media_opener([](const std::string &) { return false; });
-    point={media.x+10,media.y+10};tile.on_tap();assert(status == "Medienkachel fuer Player fehlt");
+    point={media.x+10,media.y+10};tile.on_tap();assert(status == "Normale Medienkachel fehlt");
     assert(next_re == pending_re);
     plugin.set_media_opener({});
   }
@@ -350,7 +359,7 @@ int main() {
     const int keys=background_count;
     context.width=shape.first;context.height=shape.second;
     LibraryTile tile(&plugin);tile.create(context);
-    assert(background_count == keys+2); // surface + Back; no footer buttons
+    assert(background_count == keys+2); // surface + Back; no player buttons
   }
   {
     context.width=400;context.height=380;context.entity="";
@@ -358,5 +367,5 @@ int main() {
     LibraryTile tile(&plugin);tile.create(context);
     assert(background_count == keys+2); // YAML-only player cannot open a core card
   }
-  std::cout << "Actual C++ tile: navigation/isolation, cover geometry, silent loading, errors, configurable heading, round Back, player controls/state, native media routing and destruction passed\n";
+  std::cout << "Actual C++ tile: navigation/isolation, cover geometry, silent loading, errors, heading, round Back, top-right controls/state, centred titles, native media routing and destruction passed\n";
 }

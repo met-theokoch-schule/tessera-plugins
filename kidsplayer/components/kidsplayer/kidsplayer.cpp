@@ -33,17 +33,19 @@ class LibraryTile : public tessera::Tile {
     // One-row tiles are also the intermediate step when dragging a 1x1 to 2x2.
     // Keep the back header and status clear; compact tiles omit the title row.
     compact_ = h_ < 160;
-    const int back_size = std::min(ui::px(40), h_ / 3);
-    y_ = std::max(back_size + 2, ui::line_height(tessera::Font::BODY) + 4);
-    lv_obj_set_pos(header_, 6, (y_ - ui::line_height(tessera::Font::BODY)) / 2);
     controls_ = w_ >= ui::px(280) && h_ >= ui::px(220) && !player_.empty();
+    const int button = ui::px(44), button_gap = ui::px(8), margin = ui::px(4);
+    const int back_size = controls_ ? button : std::min(ui::px(40), h_ / 3);
+    const int key_y = controls_ ? margin : 0;
+    y_ = std::max(key_y + back_size + ui::px(4), ui::line_height(tessera::Font::BODY) + 4);
+    lv_obj_set_pos(header_, 6, key_y + (back_size - ui::line_height(tessera::Font::BODY)) / 2);
+    if (controls_) lv_obj_set_width(header_, w_ - margin - 2 * button - button_gap - 12);
     mirror_ = !compact_;
     // One footer alternates between title and status. Keep the entire cover
     // above it; only the reflection may extend behind the footer.
     const int width_ = w_, height_ = h_ - y_, gap_ = ui::px(6);
     const int text = std::max(ui::line_height(tessera::Font::TITLE), ui::line_height(tessera::Font::BODY)) + ui::px(4);
-    const int button = ui::px(44), button_gap = ui::px(8), margin = ui::px(4);
-    const int footer = controls_ ? std::max(text, button + margin) : text;
+    const int footer = text;
     const int room = std::max(1, height_ - footer - gap_);
     int h = mirror_ ? std::min(room * 100 / (100 + tessera::MIRROR_PERCENT / 2), height_ * 100 / (100 + tessera::MIRROR_PERCENT))
                     : room;
@@ -80,15 +82,15 @@ class LibraryTile : public tessera::Tile {
       lv_obj_set_size(f.place, f.w, frame_h_);
       slots_.push_back(f);
     }
-    back_ = make_key(c.parent, margin, 0, back_size, 0xF004D);
+    back_ = make_key(c.parent, margin, key_y, back_size, 0xF004D);
     visible(back_, false);
     if (controls_) {
       media_ = make_key(c.parent, w_ - margin - 2 * button - button_gap,
-                        h_ - margin - button, button, 0xF01D8);
+                        key_y, button, 0xF01D8);
       playback_ = make_key(c.parent, w_ - margin - button,
-                           h_ - margin - button, button, 0xF040E);
+                           key_y, button, 0xF040E);
     }
-    const int words_width = controls_ ? media_.x - margin - 4 : w_ - 8;
+    const int words_width = w_ - 8;
     const int words_y = h_ - footer + (footer - text) / 2;
     title_ = ui::label(c.parent, compact_ ? tessera::Font::BODY : tessera::Font::TITLE, theme::INK);
     lv_obj_set_pos(title_, 4, words_y);
@@ -100,6 +102,7 @@ class LibraryTile : public tessera::Tile {
     lv_obj_set_pos(status_, 4, words_y);
     lv_obj_set_width(status_, words_width);
     lv_label_set_long_mode(status_, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(status_, LV_TEXT_ALIGN_CENTER, 0);
     show_status("");
   }
   void on_state(JsonObjectConst data) override {
@@ -135,7 +138,7 @@ class LibraryTile : public tessera::Tile {
     if (p.x < 0 || p.y < 0 || p.x >= w_ || p.y >= h_) return;
     // Player controls remain usable while metadata/artwork is on its way.
     if (controls_ && media_.contains(p)) {
-      if (!plugin_->open_media(plain(player_))) show_status("Medienkachel fuer Player fehlt");
+      if (!plugin_->open_media(plain(player_))) show_status("Normale Medienkachel fehlt");
       return;
     }
     if (controls_ && playback_.contains(p)) {

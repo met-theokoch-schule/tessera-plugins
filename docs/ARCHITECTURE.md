@@ -72,10 +72,16 @@ Tessera's `server.Refused` hält den Detailtext separat, `plugins.answer` übert
 
 ## Kachelbedienung und native Mediensteuerung ab 0.1.7
 
-`options.heading` ist ein kurzer Inspector-Text (Standard `Reihen`, bis 64 Zeichen), unabhängig pro Kachel. Ein eigener runder Back-Key wird zusammen mit den Labels erst beim Bildwechsel auf die Folgenebene eingeblendet. Footer-Keys sind an die nutzbare Größe (280 × 220 Referenzpixel) und einen Inspector-Player gebunden. Alle Touchbereiche laufen weiterhin ausschließlich durch `Tile::on_tap`; es gibt keine eigenen LVGL-Touchhandler.
+`options.heading` ist ein kurzer Inspector-Text (Standard `Reihen`, bis 64 Zeichen), unabhängig pro Kachel. Ein eigener runder Back-Key wird zusammen mit den Labels erst beim Bildwechsel auf die Folgenebene eingeblendet. Ab 0.1.8 oben rechts angeordnete Player-Keys sind an die nutzbare Größe (280 × 220 Referenzpixel) und einen Inspector-Player gebunden. Alle Touchbereiche laufen weiterhin ausschließlich durch `Tile::on_tap`; es gibt keine eigenen LVGL-Touchhandler.
 
 `on_state` verarbeitet den HA-Playerzustand für Play/Pause. `tessera::wish(player, Wish::PLAYING, value)` nutzt den nativen optimistischen Aktionspfad, ohne die Folge erneut einzureihen. Der Manifest-Eintrag `home_assistant_actions` deklariert deshalb `media_player.media_play_pause`. Schnell aufeinanderfolgende Doppeltipps werden 400 ms lang unterdrückt. Keine automatischen Play/Pause-Wiederholungen; ein Backend-Browse/Atlastransfer blockiert die Medienknöpfe nicht.
 
 API 0.24 bietet keine öffentliche Funktion zum Öffnen beliebiger nativer Entity-Karten (`tessera::open_card` öffnet nur Plugin-Karten). `native_media.h` und ein Codegen-Lambda suchen daher eine normale Medienkachel derselben Entity in `runtime_tiles::model` und rufen deren vorhandenes `hold_card(index)` auf. Das öffnet den originalen Medien-Overlay inklusive dessen Datenversorgung; keine Seite wird gewechselt, keine Model-Kachel angelegt oder umgeschrieben. Die zusätzliche Medienkachel darf auf einer anderen Seite stehen. Fehlt sie, wird der Fehler angezeigt. Die Verbindung hängt gezielt nur an `enabled`, `model` und `hold_card` des untersuchten Kerncommits `9c7c6a674d2e214355b85d810fb7d08f8fcd3544`; diese internen Namen sind keine stabile Plugin-API. Bei Kernupdates ist dieser Adapter erneut zu prüfen. Ein öffentlicher nativer Entity-Karten-Opener könnte ihn später ersetzen.
 
-Die eigentliche Darstellung/Bedienung der Medienkarte bleibt vollständig im Tessera-Kern. Keine HA-Companion-Änderung; YAML-only Player bleiben für Browse/Play unterstützt, liefern dem Frontend aber keine Entity-Zustandsbindung und erhalten daher keine Footer-Knöpfe.
+Die eigentliche Darstellung/Bedienung der Medienkarte bleibt vollständig im Tessera-Kern. Keine HA-Companion-Änderung; YAML-only Player bleiben für Browse/Play unterstützt, liefern dem Frontend aber keine Entity-Zustandsbindung und erhalten daher keine Playerknöpfe.
+
+## Position der Bedienelemente ab 0.1.8
+
+Back, Medienansicht und Play/Pause teilen bei großen Kacheln eine obere Navigationszeile mit gleichem Durchmesser und y-Wert. Der Wurzel-Header endet vor den Playerknöpfen; seine Langtextkürzung bleibt aktiv. Cover und Reflexion beginnen unter dieser Zeile. Die Fußzeile wird wieder ausschließlich von Titel bzw. Meldung belegt, beide horizontal über die volle Inhaltsbreite zentriert. In kleinen Kacheln bleiben die Playerknöpfe ausgeblendet.
+
+`Normale Medienkachel fehlt` benennt die Voraussetzung für den nativen Opener deutlicher. Die Rückmeldung bedeutet nicht, dass der Inspector-Player unbekannt wäre; die normale Player-Kachel im Layout fehlt. Ein zusätzlicher Kern-Playerzustand wird weiterhin nicht angelegt und kein laufendes Layout automatisch umgeschrieben.
