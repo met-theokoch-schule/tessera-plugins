@@ -4,16 +4,41 @@ No replacement media UI is rendered here. The real core/card itself still needs
 firmware compilation and visual acceptance on the display.
 """
 import ast
+import asyncio
 from pathlib import Path
 import shutil
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import AsyncMock, MagicMock, patch
+import types
+import sys
 
 COMPONENT = Path(__file__).resolve().parents[1] / "components" / "kidsplayer"
 
 
 class NativeMediaTest(unittest.TestCase):
+    def test_codegen_requests_alpha_image_renderer(self):
+        tree = ast.parse((COMPONENT / "__init__.py").read_text())
+        function = next(node for node in tree.body
+                        if isinstance(node, ast.AsyncFunctionDef) and node.name == "to_code")
+        module = ast.Module(body=[function], type_ignores=[])
+        cg = MagicMock()
+        cg.register_component = AsyncMock()
+        smart_display = types.SimpleNamespace(register_plugin=AsyncMock())
+        lvgl = types.ModuleType("esphome.components.lvgl")
+        lvgl.defines = types.SimpleNamespace(add_define=MagicMock())
+        namespace = {"cg": cg, "smart_display": smart_display, "CONF_ID": "id",
+                     "__file__": str(COMPONENT / "__init__.py"),
+                     "coroutine_with_priority": lambda priority: lambda function: function}
+        exec(compile(module, str(COMPONENT / "__init__.py"), "exec"), namespace)
+        modules = {name: types.ModuleType(name) for name in ("esphome", "esphome.components")}
+        modules["esphome.components.lvgl"] = lvgl
+        with patch.dict(sys.modules, modules):
+            asyncio.run(namespace["to_code"]({"id": "kidsplayer"}))
+        lvgl.defines.add_define.assert_called_once_with("LV_DRAW_SW_SUPPORT_A8", "1")
+        smart_display.register_plugin.assert_awaited_once()
+
     @unittest.skipUnless(shutil.which("clang++"), "clang++ required")
     def test_generated_callback_routes_real_entity_without_changing_page(self):
         tree = ast.parse((COMPONENT / "__init__.py").read_text())

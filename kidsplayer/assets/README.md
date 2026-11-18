@@ -9,6 +9,10 @@ The firmware uses a 32 × 32 alpha mask (1024 constant bytes) generated from thi
 SVG, not a font glyph. Its colour comes from Tessera's `INK` theme role. The image
 is scaled to 28 reference pixels and centred in the existing round control.
 There is no HTTP request, new font, runtime SVG decoder or additional cover slot.
+Since 0.1.13 the component explicitly enables `LV_DRAW_SW_SUPPORT_A8` before
+ESPHome generates `lv_conf.h`. ESPHome cannot infer formats of images created
+in C++; omitting A8 support corrupts the scaled alpha image. The SVG and the
+embedded mask are unchanged.
 A firmware built without LVGL image support uses Tessera's existing speaker glyph.
 
 Optional regeneration on macOS (Swift/AppKit, development only):

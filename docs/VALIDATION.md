@@ -188,3 +188,23 @@ Erfolgreich: nativer C++-Test gegen die echten API-/ArduinoJson-/LVGL-Header, 40
 Zusätzlich geprüft: Headerfläche in Tessera-Tastenfarbe mit abgerundeten Ecken und Innenabständen, Breite passend zum Text, Zeichenreihenfolge oberhalb der Bilder, gemeinsame Sichtbarkeit von Text/Fläche erst nach Atlaswechsel, versteckte Fläche auf Folgenebene bzw. bei leerem Text, keine Navigation beim Antippen der Überschrift sowie kein Überdecken der Playerknöpfe bei 64 Zeichen langem Text. Bisherige Wiedergabe-, Instanz-, Farbwechsel- und Fehlerprüfungen bestehen weiter.
 
 Keine Pixel-/Hardwareabnahme oder vollständige Firmwarekompilierung; die Tests verwenden UI-Doubles. Die tatsächliche Überlagerung von Bildatlas und LVGL-Elementen sowie die Spiegelung müssen nach dem Firmwareupdate am Guition geprüft werden. Keine Änderung an der laufenden Home-Assistant-/Tessera-Installation oder am Companion 0.1.7.
+
+## Reale Pixelprüfung des Icons 0.1.13
+
+Die bisherigen UI-Doubles prüften Bilddeskriptor, Platzierung und Farbe, zeichneten das Icon aber nicht. Das Benutzerfoto zeigt die Grenze dieser Prüfung. Im Code fehlte die explizite Anforderung des A8-Software-Renderers, den ESPHome für dieses ausschließlich in C++ erzeugte Bild nicht automatisch auswählt.
+
+Neu: `tools/test-icon-render.py` baut den tatsächlichen LVGL-Quellbaum und führt `kidsplayer/tests/test_icon_render.cpp` mit dem unveränderten eingebetteten HomePod-Bild aus. Ausgeführt mit dem offiziellen Tag **v9.5.0**, passend zum LVGL-Pin des offiziellen ESPHome-Tags **2026.10.2**. RGB565-Ausgabe, 32-Byte-Pufferausrichtung und 28-Pixel-Skalierung entsprechen den relevanten Darstellungsbedingungen. Der Test vergleicht Innen- und Hintergrundpixel mit der Alphamaske und überspringt interpolierte Randpixel.
+
+- Helles Design: 460 geprüfte Pixel, 0 Abweichungen.
+- Dunkles Design: 460 geprüfte Pixel, 0 Abweichungen.
+- Negative Kontrolle ohne A8-Transformation: 272 von 460 Pixeln falsch; der Fehler wird erkannt. Dafür wird nur das reale Transformationsmodul mit deaktiviertem A8-Fall ersetzt.
+- Die tatsächlich gerenderte PNG-Vorschau wurde zusätzlich betrachtet; sie zeigt die HomePod-Silhouette mit heller oberer Öffnung.
+- 41 Python-Tests erfolgreich, einschließlich Ausführung des tatsächlichen Plugin-`to_code` mit gemocktem ESPHome zur Prüfung der A8-Anforderung. Bestehender nativer Kacheltest gegen API 0.24/LVGL 9.3 und offizieller Tessera-Validator bestehen weiter.
+
+Reproduzieren (clang/clang++, ar; der Buildordner enthält nur wiederverwendbare Testartefakte):
+
+```sh
+python3 tools/test-icon-render.py /path/to/lvgl-v9.5.0 /tmp/kidsplayer-icon-render
+```
+
+Die vollständige Guition-Firmware wurde nicht gebaut oder installiert. Der reale Host-Renderer ist eine zusätzliche Prüfung, kein ESP32-Hardwaretest. Der tatsächliche Compilerstand des Displays wurde nicht erneut ausgelesen; der untersuchte ESPHome-Tag entspricht dem zuletzt bekannten installierten Builder. Das Symbol muss nach dem Update am Gerät bestätigt werden. Kein neues Bildformat vom Benutzer nötig; SVG, Maske und HA-Companion bleiben unverändert.

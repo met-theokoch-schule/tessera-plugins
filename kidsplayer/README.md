@@ -1,4 +1,4 @@
-# Kidsplayer 0.1.12
+# Kidsplayer 0.1.13
 
 Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
@@ -313,3 +313,13 @@ Die konfigurierbare Überschrift erhält eine kleine, hellgraue Fläche mit abge
 Die Cover verwenden weiterhin den vorhandenen Tessera-Bildweg und die unveränderte New-music-Anordnungsschleife. Keine Änderung an der nativen Playeransicht oder am Tessera-Kern.
 
 **Update:** Plugin **0.1.12** aktualisieren und die Display-Firmware neu bauen/installieren. Companion **0.1.7**, Bibliotheks-YAML und Kacheloptionen bleiben unverändert. Höhere Cover, überlagerte Knöpfe, Spiegelung und Überschrift anschließend am Display prüfen.
+
+## Update auf 0.1.13: HomePod-Symbol korrekt rendern
+
+**Das bereitgestellte SVG ist geeignet und muss nicht ersetzt werden.** Das fehlerhafte, gestreifte Symbol entstand durch eine fehlende Einstellung in der Plugin-Einbindung: Kidsplayer erstellt sein Alphabild in C++, während ESPHome die unterstützten LVGL-Bildformate anhand der YAML-Bilder auswählt. Für die Skalierung dieses Symbols fehlte `LV_DRAW_SW_SUPPORT_A8=1`. Ohne diesen Renderer wird die Alphamaske nicht korrekt in den skalierten Zwischenpuffer gezeichnet.
+
+Kidsplayer aktiviert A8 nun über die ESPHome-LVGL-Codegenerierung, bevor `lv_conf.h` geschrieben wird. SVG, erzeugte Bilddaten, Größe und Farbe des Symbols bleiben gleich. Keine zusätzliche Bilddatei und keine Änderung an Tessera oder Home Assistant nötig.
+
+Der neue Test zeichnet das tatsächliche Symbol mit **echtem LVGL 9.5.0** in einen RGB565-Bildpuffer. Im hellen und dunklen Design stimmen jeweils 460 geprüfte Innen-/Hintergrundpixel; ohne A8-Transformation reproduziert derselbe Test den Fehler. Diese Prüfung ist aussagekräftiger als die bisherigen UI-Doubles, ersetzt aber weiterhin keine Abnahme auf dem Guition.
+
+**Update:** Plugin **0.1.13** aktualisieren und die Display-Firmware neu bauen/installieren. Ein reines Senden des Layouts genügt nicht, weil sich die LVGL-Buildkonfiguration ändert. Der HA-Companion **0.1.7**, Bibliotheks-YAML und SVG bleiben unverändert. Danach das HomePod-Symbol am Display prüfen.

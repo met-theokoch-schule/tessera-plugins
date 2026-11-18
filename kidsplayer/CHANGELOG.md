@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.13
+
+- Explicitly enable LVGL's A8 software image renderer before ESPHome writes lv_conf.h. C++-created alpha images were not discovered through YAML, so their scaled pixels could be left uninitialized.
+- Preserve the original supplied SVG, alpha mask, icon size and native media action; no replacement image is needed.
+- Add a codegen regression and a real LVGL pixel-render test for light/dark themes, including a negative control that reproduces the missing-A8 rendering error.
+- Firmware-only update; Home Assistant companion remains 0.1.7.
+
 ## 0.1.12
 
 - Raise the cover group into the navigation row and restore New music's 30% reflection on normal-height tiles.
