@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta name="description" content="Cover im Browser quadratisch zuschneiden. Bild hineinziehen, Ausschnitt verschieben und als JPG herunterladen. Ohne Upload.">
+<title>Coverwerkstatt · Quadratische Hörspielcover</title>
+<style>
+:root{--ink:#22352f;--muted:#728078;--green:#285b48;--green-light:#edf4ef;--line:#e2e7e0;--paper:#fbfcf8;--orange:#d48451;--radius:20px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink);font-synthesis:none}*{box-sizing:border-box}body{margin:0;background:var(--paper);min-width:300px}button,input{font:inherit}button{cursor:pointer}button:disabled,input:disabled{cursor:default}button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid #81ac91;outline-offset:5px}button{transition:background .16s,color .16s,box-shadow .16s}svg{display:block}header,main,footer{width:min(1112px,calc(100% - 64px));margin:auto}.topbar{display:flex;justify-content:space-between;align-items:center;padding:32px 0 24px}.brand{display:flex;gap:12px;align-items:center;font-size:17px;font-weight:700;letter-spacing:-.5px}.brand-icon{width:37px;height:37px;display:grid;place-items:center;background:var(--green);border-radius:12px;color:white}.private{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.private svg{width:14px;height:14px}.intro{padding:38px 0 29px;display:flex;align-items:end;justify-content:space-between;gap:24px}.eyebrow{display:flex;align-items:center;gap:8px;text-transform:uppercase;font-size:10px;font-weight:750;letter-spacing:1.6px;color:var(--green);margin:0 0 13px}.eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--orange)}h1{font-size:clamp(29px,4.8vw,46px);line-height:1.12;letter-spacing:-1.8px;font-weight:650;margin:0 0 13px}.intro p.description{font-size:14px;line-height:1.6;color:var(--muted);margin:0}.steps{display:flex;gap:15px;align-items:center;white-space:nowrap;padding:0 0 4px;font-size:11px;color:var(--muted)}.step{display:flex;gap:7px;align-items:center}.step b{display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;width:23px;height:23px;font-size:10px;font-weight:600}.step:first-child b{background:var(--green-light);border-color:#d5e2d7;color:var(--green)}.steps>span{color:#c4cdc4}.workspace{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:18px;align-items:stretch}.editor,.export-panel{border:1px solid var(--line);background:white;border-radius:var(--radius)}.editor{padding:20px;min-width:0}.panel-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:26px;margin:0 0 17px}.panel-label{font-size:12px;font-weight:650;display:flex;gap:8px;align-items:center}.panel-label .number{font-size:10px;font-weight:700;color:var(--green);background:var(--green-light);padding:4px 6px;border-radius:5px}.subtle-btn{border:0;background:transparent;color:var(--green);font-size:11px;padding:6px 3px;border-radius:5px}.subtle-btn:hover{background:var(--green-light)}.dropzone{position:relative;min-height:390px;display:flex;align-items:center;justify-content:center;border:1.5px dashed #cdd9cd;border-radius:13px;background:#f8fbf7;text-align:center;cursor:pointer;transition:background .15s,border-color .15s}.dropzone:hover,.is-dragging .dropzone{background:#f0f6ee;border-color:#629374}.upload-icon{width:66px;height:66px;margin:0 auto 22px;border-radius:20px;background:#eaf1e7;color:var(--green);display:grid;place-items:center;transform:rotate(-5deg)}.upload-icon svg{transform:rotate(5deg)}.dropzone h2{font-size:19px;font-weight:600;letter-spacing:-.4px;margin:0 0 9px}.dropzone p{margin:0;font-size:13px;color:var(--muted);line-height:1.8}.choose{display:inline-block;margin-top:20px;border:1px solid #d1ddd0;border-radius:8px;padding:10px 18px;background:white;color:var(--green);font-size:12px;font-weight:600;pointer-events:none}.formats{display:block;font-size:10px!important;letter-spacing:.1px;margin-top:17px!important;color:#95a090!important}.stage{height:390px;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;background-color:#f0f2ed;background-image:linear-gradient(45deg,#e8ece5 25%,transparent 25%),linear-gradient(-45deg,#e8ece5 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8ece5 75%),linear-gradient(-45deg,transparent 75%,#e8ece5 75%);background-size:16px 16px;background-position:0 0,0 8px,8px -8px,-8px 0;border-radius:13px}.image-area{position:relative;overflow:hidden;flex:none;touch-action:none;user-select:none;-webkit-user-select:none}.image-area img{width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none}.selection{position:absolute;border:2px solid white;box-shadow:0 0 0 2000px #111c19a3;cursor:grab;touch-action:none;outline-offset:-5px!important}.selection.dragging{cursor:grabbing}.selection.fixed{cursor:default}.selection::before,.selection::after{content:"";position:absolute;pointer-events:none}.selection::before{inset:33.333% 0;border-top:1px solid #ffffff45;border-bottom:1px solid #ffffff45}.selection::after{inset:0 33.333%;border-left:1px solid #ffffff45;border-right:1px solid #ffffff45}.handle{position:absolute;width:11px;height:11px;border:3px solid white;pointer-events:none}.tl{top:-3px;left:-3px;border-right:0;border-bottom:0}.tr{top:-3px;right:-3px;border-left:0;border-bottom:0}.bl{bottom:-3px;left:-3px;border-right:0;border-top:0}.br{bottom:-3px;right:-3px;border-left:0;border-top:0}.drag-overlay{position:absolute;inset:0;background:#eaf3e6eb;border:2px dashed #679574;border-radius:13px;z-index:2;display:none;align-items:center;justify-content:center;font-size:16px;color:var(--green);pointer-events:none}.is-dragging .drag-overlay{display:flex}.editor-foot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:14px;min-height:20px;font-size:11px;color:var(--muted)}.file-info{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:65%}.file-type{font-variant-numeric:tabular-nums}.export-panel{padding:23px;display:flex;flex-direction:column}.export-panel h2{font-size:14px;font-weight:650;letter-spacing:-.2px;margin:0 0 8px}.export-desc{font-size:11px;line-height:1.6;color:var(--muted);margin:0 0 22px}.thumbnail{width:100%;aspect-ratio:1;border-radius:10px;background:#f4f6f1;display:grid;place-items:center;overflow:hidden;border:1px solid #edf0e9}.thumbnail canvas{display:block;width:100%;height:100%}.thumbnail-placeholder{color:#b0bcae;display:flex;flex-direction:column;align-items:center;gap:13px;font-size:10px}.output-info{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;margin:12px 0 23px;color:var(--muted)}.format{color:var(--green);background:var(--green-light);font-size:9px;letter-spacing:.7px;font-weight:700;padding:4px 7px;border-radius:4px}.position-label{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--ink);gap:8px;margin-bottom:5px}input[type=range]{accent-color:var(--green);width:100%;height:18px;margin:8px 0 2px}.range-labels{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin:2px 0 20px}.range-box[aria-disabled=true]{opacity:.4}.download{border:0;border-radius:10px;background:var(--green);color:white;font-size:12px;font-weight:600;min-height:45px;display:flex;align-items:center;justify-content:center;gap:9px;width:100%;margin-top:auto}.download:hover:not(:disabled){background:#194734}.download:disabled{background:#e5ebe2;color:#a0ada0}.download-note{text-align:center;font-size:9px;color:var(--muted);line-height:1.7;margin:10px 0 0}.hint{display:flex;gap:8px;align-items:center;justify-content:center;font-size:11px;color:var(--muted);margin:22px 0 0;line-height:1.6;text-align:center}.hint svg{width:14px;height:14px;flex:none}.message{margin-top:16px;padding:11px 14px;border-radius:9px;background:#fcf0e8;color:#884b2c;font-size:12px;line-height:1.5}.message.success{background:var(--green-light);color:var(--green)}footer{padding:32px 0 24px;display:flex;justify-content:space-between;gap:15px;color:#95a090;font-size:10px;border-top:1px solid var(--line);margin-top:48px}.footer-left{display:flex;gap:7px;align-items:center}[hidden]{display:none!important}.loading .dropzone{pointer-events:none;opacity:.65}.loading .stage{opacity:.65}@media(min-width:1300px){.stage,.dropzone{height:440px;min-height:440px}}@media(max-width:850px){.steps{display:none}.workspace{grid-template-columns:minmax(0,1fr) 250px}.export-panel{padding:19px}.editor{padding:16px}.stage,.dropzone{height:360px;min-height:360px}}@media(max-width:650px){header,main,footer{width:calc(100% - 32px)}.topbar{padding:22px 0 10px}.brand{font-size:15px}.private{font-size:0;gap:0}.private svg{width:17px;height:17px}.intro{padding:31px 0 23px}h1{letter-spacing:-1px}.intro p.description{font-size:12px}.workspace{grid-template-columns:1fr;gap:13px}.stage,.dropzone{height:340px;min-height:340px}.export-panel{display:grid;grid-template-columns:128px minmax(0,1fr);column-gap:20px;padding:20px}.export-panel h2{grid-column:1/-1}.export-desc{grid-column:1/-1;margin-bottom:16px}.thumbnail{grid-column:1;grid-row:3/6;align-self:start}.output-info{grid-column:2;margin-top:0;margin-bottom:12px}.range-box{grid-column:2}.range-labels{margin-bottom:15px}.download{grid-column:1/-1;margin-top:18px}.download-note{grid-column:1/-1}.hint{font-size:10px;padding:0 6px}.file-info{max-width:63%}footer{margin-top:32px;font-size:9px;flex-wrap:wrap}}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-icon" aria-hidden="true"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M7 3v14h14M3 7h14v14M17 3v4M3 17h4"/></svg></span>Coverwerkstatt</div>
+  <span class="private"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Bleibt auf deinem Gerät</span>
+</header>
+<main>
+  <section class="intro" aria-labelledby="title">
+    <div><p class="eyebrow">Für deine Hörspielbibliothek</p><h1 id="title">Dein Cover im Quadrat.</h1><p class="description">Bild hineinziehen. Ausschnitt verschieben. Fertig.</p></div>
+    <div class="steps" aria-hidden="true"><div class="step"><b>1</b>Bild wählen</div><span>›</span><div class="step"><b>2</b>Zuschneiden</div><span>›</span><div class="step"><b>3</b>Herunterladen</div></div>
+  </section>
+  <div class="workspace" id="workspace">
+    <section class="editor" aria-label="Bild und Ausschnitt">
+      <div class="panel-heading"><span class="panel-label"><span class="number">01</span>Dein Bild</span><button class="subtle-btn" id="replace" type="button" hidden>Anderes Bild wählen</button></div>
+      <input id="file-input" type="file" accept="image/*" hidden>
+      <div class="dropzone" id="dropzone" role="button" tabindex="0" aria-label="Bild auswählen oder hier ablegen">
+        <div><div class="upload-icon" aria-hidden="true"><svg width="31" height="31" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m3 17 5-5 4 4 4-6 5 7"/></svg></div><h2>Bild hier ablegen</h2><p>Zieh dein Cover in dieses Feld.</p><span class="choose">Oder Bild auswählen</span><p class="formats">JPG · PNG · WebP · weitere Browserformate</p></div>
+      </div>
+      <div class="stage" id="stage" hidden>
+        <div class="image-area" id="image-area"><img id="source-image" alt="Originalbild mit quadratischem Ausschnitt" draggable="false"><div id="selection" class="selection" role="slider" tabindex="0" aria-label="Quadratischen Ausschnitt verschieben" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0"><span class="handle tl"></span><span class="handle tr"></span><span class="handle bl"></span><span class="handle br"></span></div></div>
+        <div class="drag-overlay" aria-hidden="true">Neues Bild ablegen</div>
+      </div>
+      <div class="editor-foot"><span id="file-info" class="file-info">Noch kein Bild ausgewählt</span><span id="source-size" class="file-type">Originalauflösung</span></div>
+    </section>
+    <aside class="export-panel" aria-labelledby="preview-title">
+      <h2 id="preview-title">So sieht dein Cover aus</h2><p class="export-desc">Nur das Quadrat wird heruntergeladen.<br>Die Auflösung bleibt erhalten.</p>
+      <div class="thumbnail"><div id="thumbnail-placeholder" class="thumbnail-placeholder"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 8h8v8H8z" stroke-dasharray="2 2"/></svg>Deine Vorschau</div><canvas id="thumbnail" width="240" height="240" aria-label="Vorschau des quadratischen Covers" hidden></canvas></div>
+      <div class="output-info"><span id="output-size">— × — px</span><span class="format">JPG</span></div>
+      <div class="range-box" id="range-box" aria-disabled="true"><div class="position-label"><label for="position">Ausschnitt verschieben</label><button id="center" class="subtle-btn" type="button" disabled>Zentrieren</button></div><input id="position" type="range" min="0" max="0" step="1" value="0" disabled><div class="range-labels"><span id="range-start">Anfang</span><span id="range-end">Ende</span></div></div>
+      <button class="download" id="download" type="button" disabled><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v4h16v-4"/></svg><span>Cover herunterladen</span></button>
+      <p class="download-note" id="download-note">Größtmögliches Quadrat · ohne Verzerrung</p>
+    </aside>
+  </div>
+  <div class="message" id="message" role="status" aria-live="polite" hidden></div>
+  <p class="hint" id="hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 10v6m0-10v1"/></svg><span id="hint-text">Der Rahmen ist immer so groß wie die kürzere Seite deines Bildes.</span></p>
+</main>
+<footer><span class="footer-left">Für Kidsplayer gemacht.</span><span>Kein Upload. Keine Installation. Deine Bilder bleiben bei dir.</span></footer>
+<script>
+'use strict';
+function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
+function squareCrop(width,height,offset){
+  if(!Number.isInteger(width)||!Number.isInteger(height)||width<1||height<1)throw new Error('Ungültige Bildgröße');
+  const size=Math.min(width,height),maxOffset=Math.max(width,height)-size;
+  const position=clamp(Math.round(offset??maxOffset/2),0,maxOffset);
+  return {size,x:width>height?position:0,y:height>width?position:0,offset:position,maxOffset,axis:width>height?'x':'y'};
+}
+function fitImage(width,height,availableWidth,availableHeight){
+  const scale=Math.min(availableWidth/width,availableHeight/height);
+  return {scale,width:width*scale,height:height*scale};
+}
+function moveByKey(key,offset,maxOffset,axis,large=false){
+  const step=Math.max(1,Math.round(maxOffset/100))*(large?10:1);
+  if(key==='Home')return 0;
+  if(key==='End')return maxOffset;
+  if(key===(axis==='x'?'ArrowLeft':'ArrowUp'))return clamp(offset-step,0,maxOffset);
+  if(key===(axis==='x'?'ArrowRight':'ArrowDown'))return clamp(offset+step,0,maxOffset);
+  return null;
+}
+function coverFilename(name){
+  const stem=String(name).replace(/\.[^.]+$/,'').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').trim()||'bild';
+  return stem+'-cover.jpg';
+}
+function initCoverTool(){
+  const $=id=>document.getElementById(id);
+  const input=$('file-input'),workspace=$('workspace'),stage=$('stage'),area=$('image-area'),selection=$('selection');
+  const picture=$('source-image'),range=$('position'),download=$('download'),thumb=$('thumbnail');
+  let image=null,file=null,currentURL='',offset=0,fit=null,drag=null,loadId=0,raf=0,busy=false,exporting=false,dragDepth=0;
+  const thumbContext=thumb.getContext('2d');
+  function message(text,success=false){$('message').textContent=text;$('message').classList.toggle('success',success);$('message').hidden=!text;}
+  function setBusy(value){busy=value;workspace.classList.toggle('loading',value);workspace.setAttribute('aria-busy',String(value));download.disabled=value||exporting||!image;}
+  function update(){
+    if(!image)return;
+    const crop=squareCrop(image.naturalWidth,image.naturalHeight,offset);offset=crop.offset;
+    const rect=stage.getBoundingClientRect();
+    fit=fitImage(image.naturalWidth,image.naturalHeight,Math.max(1,rect.width-28),Math.max(1,rect.height-28));
+    area.style.width=fit.width+'px';area.style.height=fit.height+'px';
+    selection.style.width=selection.style.height=crop.size*fit.scale+'px';
+    selection.style.left=crop.x*fit.scale+'px';selection.style.top=crop.y*fit.scale+'px';
+    selection.classList.toggle('fixed',!crop.maxOffset);
+    selection.setAttribute('aria-orientation',crop.axis==='x'?'horizontal':'vertical');
+    selection.setAttribute('aria-valuemax',String(crop.maxOffset));selection.setAttribute('aria-valuenow',String(crop.offset));
+    selection.setAttribute('aria-disabled',String(!crop.maxOffset));
+    selection.setAttribute('aria-valuetext',crop.maxOffset?(crop.axis==='x'?'Horizontal: ':'Vertikal: ')+crop.offset+' von '+crop.maxOffset+' Pixeln':'Das Bild ist bereits quadratisch.');
+    range.max=String(crop.maxOffset);range.value=String(crop.offset);range.disabled=!crop.maxOffset||busy;
+    $('center').disabled=!crop.maxOffset||busy;$('range-box').setAttribute('aria-disabled',String(!crop.maxOffset));
+    $('range-start').textContent=crop.axis==='x'?'Links':'Oben';$('range-end').textContent=crop.axis==='x'?'Rechts':'Unten';
+    $('output-size').textContent=crop.size+' × '+crop.size+' px';
+    $('hint-text').textContent=crop.maxOffset?'Rahmen '+(crop.axis==='x'?'nach links oder rechts':'nach oben oder unten')+' ziehen. Mit den Pfeiltasten geht’s auch; Umschalt macht größere Schritte.':'Dein Bild ist schon quadratisch. Du kannst es direkt herunterladen.';
+    thumbContext.fillStyle='#ffffff';thumbContext.fillRect(0,0,240,240);
+    thumbContext.drawImage(image,crop.x,crop.y,crop.size,crop.size,0,0,240,240);
+  }
+  function schedule(){if(!raf)raf=requestAnimationFrame(()=>{raf=0;update();});}
+  async function loadFile(next){
+    if(!next)return;
+    if(next.size>50*1024*1024){message('Das Bild ist größer als 50 MB. Bitte wähle eine kleinere Datei.');return;}
+    if(!next.type.startsWith('image/')&&!/\.(jpe?g|png|webp|avif|gif|bmp|heic|heif|tiff?)$/i.test(next.name)){message('Bitte wähle eine Bilddatei aus, zum Beispiel JPG, PNG oder WebP.');return;}
+    const id=++loadId;
+    setBusy(true);if(image)update();message('');
+    const url=URL.createObjectURL(next),candidate=new Image();candidate.decoding='async';candidate.src=url;
+    try{
+      await candidate.decode();
+      if(id!==loadId){URL.revokeObjectURL(url);return;}
+      if(!candidate.naturalWidth||!candidate.naturalHeight)throw new Error('Das Bild hat keine gültige Größe.');
+      if(candidate.naturalWidth*candidate.naturalHeight>80000000)throw new Error('Das Bild hat mehr als 80 Megapixel. Bitte verwende eine kleinere Version.');
+      const previous=currentURL;image=candidate;file=next;currentURL=url;offset=Math.floor(Math.abs(image.naturalWidth-image.naturalHeight)/2);
+      picture.src=url;$('dropzone').hidden=true;stage.hidden=false;$('replace').hidden=false;
+      thumb.hidden=false;$('thumbnail-placeholder').hidden=true;
+      $('file-info').textContent=file.name;$('file-info').title=file.name;
+      $('source-size').textContent=image.naturalWidth+' × '+image.naturalHeight+' px';
+      $('download-note').textContent=coverFilename(file.name);update();
+      if(previous)URL.revokeObjectURL(previous);
+    }catch(error){
+      URL.revokeObjectURL(url);
+      if(id===loadId)message(error instanceof DOMException?'Dieses Bildformat kann dein Browser nicht öffnen. Verwende bitte JPG, PNG oder WebP.':error.message||'Das Bild konnte nicht geladen werden.');
+    }finally{if(id===loadId){setBusy(false);if(image)update();}}
+  }
+  function choose(){input.click();}
+  $('dropzone').addEventListener('click',choose);
+  $('dropzone').addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();choose();}});
+  $('replace').addEventListener('click',choose);
+  input.addEventListener('change',()=>{const selected=input.files[0];input.value='';loadFile(selected);});
+  document.addEventListener('dragover',event=>{if(Array.from(event.dataTransfer?.types||[]).includes('Files'))event.preventDefault();});
+  document.addEventListener('drop',event=>event.preventDefault());
+  workspace.addEventListener('dragenter',event=>{if(Array.from(event.dataTransfer?.types||[]).includes('Files')){event.preventDefault();dragDepth++;workspace.classList.add('is-dragging');}});
+  workspace.addEventListener('dragover',event=>{event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='copy';});
+  workspace.addEventListener('dragleave',()=>{dragDepth=Math.max(0,dragDepth-1);if(!dragDepth)workspace.classList.remove('is-dragging');});
+  workspace.addEventListener('drop',event=>{event.preventDefault();dragDepth=0;workspace.classList.remove('is-dragging');loadFile(event.dataTransfer?.files?.[0]);});
+  area.addEventListener('pointerdown',event=>{
+    if(!image||busy||!event.isPrimary||event.button!==0)return;
+    const crop=squareCrop(image.naturalWidth,image.naturalHeight,offset);if(!crop.maxOffset)return;
+    event.preventDefault();selection.focus({preventScroll:true});
+    if(!selection.contains(event.target)){
+      const rect=area.getBoundingClientRect();const local=crop.axis==='x'?event.clientX-rect.left:event.clientY-rect.top;
+      offset=clamp(Math.round(local/fit.scale-crop.size/2),0,crop.maxOffset);update();
+    }
+    drag={id:event.pointerId,start:crop.axis==='x'?event.clientX:event.clientY,offset,axis:crop.axis,scale:fit.scale,max:crop.maxOffset};
+    area.setPointerCapture(event.pointerId);selection.classList.add('dragging');
+  });
+  area.addEventListener('pointermove',event=>{if(!drag||event.pointerId!==drag.id)return;const coordinate=drag.axis==='x'?event.clientX:event.clientY;offset=clamp(drag.offset+(coordinate-drag.start)/drag.scale,0,drag.max);schedule();});
+  function endDrag(event){if(drag&&event.pointerId===drag.id){drag=null;selection.classList.remove('dragging');update();}}
+  area.addEventListener('pointerup',endDrag);area.addEventListener('pointercancel',endDrag);area.addEventListener('lostpointercapture',endDrag);
+  selection.addEventListener('keydown',event=>{if(!image||busy)return;const crop=squareCrop(image.naturalWidth,image.naturalHeight,offset);const next=moveByKey(event.key,crop.offset,crop.maxOffset,crop.axis,event.shiftKey);if(next!==null){event.preventDefault();offset=next;update();}});
+  range.addEventListener('input',()=>{offset=Number(range.value);update();});
+  $('center').addEventListener('click',()=>{if(image){offset=Math.floor(Math.abs(image.naturalWidth-image.naturalHeight)/2);update();}});
+  new ResizeObserver(()=>{drag=null;selection.classList.remove('dragging');schedule();}).observe(stage);
+  download.addEventListener('click',async()=>{
+    if(!image||busy||exporting)return;
+    const chosen=image,chosenFile=file,crop=squareCrop(chosen.naturalWidth,chosen.naturalHeight,offset);
+    exporting=true;download.disabled=true;message('');
+    try{
+      const output=document.createElement('canvas');output.width=output.height=crop.size;
+      const context=output.getContext('2d');if(!context)throw new Error('Der Browser konnte das Cover nicht erzeugen.');
+      context.fillStyle='#ffffff';context.fillRect(0,0,crop.size,crop.size);
+      context.drawImage(chosen,crop.x,crop.y,crop.size,crop.size,0,0,crop.size,crop.size);
+      const blob=await new Promise((resolve,reject)=>output.toBlob(value=>value?resolve(value):reject(new Error('Das Cover konnte nicht exportiert werden.')),'image/jpeg',.94));
+      const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=coverFilename(chosenFile.name);document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+      if(chosen===image)message('Dein quadratisches Cover wurde als JPG heruntergeladen.',true);
+    }catch(error){message(error.message||'Das Cover konnte nicht heruntergeladen werden.');}
+    finally{exporting=false;download.disabled=busy||!image;}
+  });
+  window.addEventListener('pagehide',()=>{if(currentURL)URL.revokeObjectURL(currentURL);});
+}
+if(typeof document!=='undefined')initCoverTool();
+</script>
+</body>
+</html>

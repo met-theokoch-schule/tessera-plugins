@@ -20,3 +20,7 @@ Die ZIP beginnt direkt mit `custom_components/kidsplayer/`, ohne zusätzliche Re
 Wer stattdessen GitHub's **Code → Download ZIP** verwendet, erhält das ganze Quellrepository. Darin liegt der Companion erst unter `tessera-plugins-main/kidsplayer/backend/custom_components/kidsplayer/`. Der äußere Ordner `kidsplayer/` enthält das Tessera-Plugin und ist nicht selbst die HA-Custom-Integration.
 
 Erzeugung aus diesem Checkout: `python3 tools/package-companion.py downloads/kidsplayer-ha-companion-0.1.8.zip`. Das Skript prüft alle erforderlichen Dateien einschließlich `manifest.json` und die ZIP-Integrität.
+
+## Coverwerkstatt
+
+[**Coverwerkstatt als einzelne HTML-Datei herunterladen**](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/coverwerkstatt.html), anschließend per Doppelklick im Browser öffnen. Bild hineinziehen, quadratischen Rahmen verschieben, Ausschnitt als JPG herunterladen. Keine Installation und kein Bild-Upload. Beschreibung und Quellcode unter [`coverwerkstatt/`](../coverwerkstatt/README.md).

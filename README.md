@@ -8,6 +8,7 @@ Kindgerechte Hörspielbibliothek für Tessera und Music Assistant: Reihen und Fo
 
 - [Installation, Konfiguration und Wiedergabetest](kidsplayer/README.md)
 - [Vollständige Beispielbibliothek](kidsplayer/examples/libraries.yaml) (absichtlich ungültige Platzhalter ersetzen)
+- [Coverwerkstatt: Bilder quadratisch zuschneiden](coverwerkstatt/README.md) · [HTML-Datei herunterladen](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/coverwerkstatt.html), im Browser öffnen und lokal verwenden.
 - [API-Untersuchung und Architektur](docs/ARCHITECTURE.md)
 - [Prüfergebnisse und Grenzen](docs/VALIDATION.md)
 
