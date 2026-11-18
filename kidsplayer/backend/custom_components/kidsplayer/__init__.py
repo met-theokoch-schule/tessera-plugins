@@ -18,7 +18,7 @@ from homeassistant.components.music_assistant.helpers import get_music_assistant
 from .library import parse, window, ConfigError, MAX_BYTES
 from .playback import Playback
 from .compat import contextual
-from .images import CoverError, MAX_IMAGE_BYTES, read_image_response
+from .images import CoverError, MAX_IMAGE_BYTES, read_image_response, local_cover_source
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = 'kidsplayer'
@@ -67,11 +67,11 @@ class Backend:
             source = client.get_media_item_image_url(media)
             if not source:
                 return ''
+            identity = 'complete-image-v2:' + self.digest + source
         else:
-            source = str((self.root / item.cover).resolve())
-            if not Path(source).is_relative_to(self.root):
-                raise ValueError('Cover ausserhalb cover_root')
-        token = hashlib.sha256(('complete-image-v2:' + self.digest + source).encode()).hexdigest()[:20]
+            source, fingerprint = await self.hass.async_add_executor_job(local_cover_source, self.root, item.cover)
+            identity = 'local-image-v3:' + self.digest + source + ':' + fingerprint
+        token = hashlib.sha256(identity.encode()).hexdigest()[:20]
         self.covers[token] = (source, item.cover == 'auto')
         self.covers.move_to_end(token)
         while len(self.covers) > 512:

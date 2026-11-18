@@ -1,6 +1,6 @@
 # Kidsplayer 0.1.13
 
-Aktueller Home-Assistant-Companion: **0.1.7**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
+Aktueller Home-Assistant-Companion: **0.1.8**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.8.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt ein runder Pfeil nach links zur Reihenebene. Die Überschrift der Reihenebene lässt sich pro Kachel unter **Überschrift** ändern (Standard: `Reihen`, maximal 64 Zeichen). Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
@@ -94,7 +94,7 @@ Die offizielle HA-Aktion `music_assistant.play_media` unterstützt Listen. Ihr u
 
 `cover: robin_hood.jpg` liest `/media/hoerspielcover/robin_hood.jpg`. Relative Unterordner sind erlaubt. Ein ursprünglich gewünschtes `covers/robin_hood.jpg` bedeutet entsprechend `/media/hoerspielcover/covers/robin_hood.jpg`. Absolute Pfade und Verzeichnisausbruch sind gesperrt; auch aufgelöste Symlinks müssen im Coververzeichnis bleiben. Keine öffentlichen `/local/`-Freigaben notwendig.
 
-Der Companion stellt die Grafik unter einer kurzen, **authentifizierten** HA-Bildadresse bereit. Tessera lädt sie mit seinen vorhandenen Zugangsdaten, skaliert sie in bis zu sieben Coverplätze und cached das Ergebnis. Das Bild behält sein Seitenverhältnis (`contain`), ohne Abdunklung oder Text über dem Motiv. Download maximal 2 MiB, Ausgangsbild höchstens 360 × 360 Pixel. Der Originalcoverinhalt verlässt nur den bestehenden HA/Tessera-Bildweg; keine Schlüssel gehen an das Display. Ein bestehendes lokales Bild nach Austausch durch eine kleine YAML-Änderung invalidieren; ansonsten kann Tessera es bis zu sechs Stunden cachen.
+Der Companion stellt die Grafik unter einer kurzen, **authentifizierten** HA-Bildadresse bereit. Tessera lädt sie mit seinen vorhandenen Zugangsdaten, skaliert sie in bis zu sieben Coverplätze und cached das Ergebnis. Das Bild behält sein Seitenverhältnis (`contain`), ohne Abdunklung oder Text über dem Motiv. Download maximal 2 MiB, Ausgangsbild höchstens 360 × 360 Pixel. Der Originalcoverinhalt verlässt nur den bestehenden HA/Tessera-Bildweg; keine Schlüssel gehen an das Display. Ab Companion 0.1.8 ändert sich die Bildadresse automatisch, wenn der Inhalt eines lokalen Covers ersetzt wird; die sichtbare Kachel übernimmt das beim nächsten Browse, normalerweise nach etwa 30 Sekunden. Ältere Companionversionen benötigen einen neuen Dateinamen im `cover:`-Eintrag oder eine kleine YAML-Änderung, weil Tessera das Bild sonst bis zu sechs Stunden cachen kann.
 
 ## Mehrere Kacheln, Player und Benutzer
 
@@ -323,3 +323,15 @@ Kidsplayer aktiviert A8 nun über die ESPHome-LVGL-Codegenerierung, bevor `lv_co
 Der neue Test zeichnet das tatsächliche Symbol mit **echtem LVGL 9.5.0** in einen RGB565-Bildpuffer. Im hellen und dunklen Design stimmen jeweils 460 geprüfte Innen-/Hintergrundpixel; ohne A8-Transformation reproduziert derselbe Test den Fehler. Diese Prüfung ist aussagekräftiger als die bisherigen UI-Doubles, ersetzt aber weiterhin keine Abnahme auf dem Guition.
 
 **Update:** Plugin **0.1.13** aktualisieren und die Display-Firmware neu bauen/installieren. Ein reines Senden des Layouts genügt nicht, weil sich die LVGL-Buildkonfiguration ändert. Der HA-Companion **0.1.7**, Bibliotheks-YAML und SVG bleiben unverändert. Danach das HomePod-Symbol am Display prüfen.
+
+## Companion 0.1.8: JPG unter gleichem Namen austauschen
+
+Bis Companion 0.1.7 wurde die Bildadresse nur aus Bibliotheks-YAML und Quellpfad erzeugt. Beim Austausch ausschließlich der JPG-Datei blieb sie unverändert. Der getrennt laufende Tessera Screen Manager konnte deshalb weiterhin sein altes Bild aus dem Cache liefern; Neustarts des Displays und von Home Assistant änderten die Bildadresse nicht.
+
+**Ab Companion 0.1.8** berücksichtigt die Adresse zusätzlich den tatsächlichen Dateiinhalt. JPG unter dem bisherigen Namen austauschen und die betroffene Kachel geöffnet lassen: Beim nächsten Browse, normalerweise nach etwa 30 Sekunden, bekommt sie eine neue Bildadresse und lädt das neue Cover. Weder Bibliotheks-YAML noch Dateiname noch Display-Firmware müssen dafür geändert werden. Unveränderte Dateien behalten ihre Adresse, auch nach einem Neustart oder geänderten Dateizeitstempeln. Ausführliche Metadaten oder Bilddateien werden weiterhin nicht in die Bibliotheksantwort aufgenommen.
+
+**Installation dieses Fixes:** [HA-Companion 0.1.8 herunterladen](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.8.zip), nach `/config` entpacken, sodass die Dateien unter `/config/custom_components/kidsplayer/` liegen, und Home Assistant einmal neu starten. Der gesamte Companion-Ordner muss aktualisiert werden, insbesondere `__init__.py`, `images.py` und `manifest.json`. Displayplugin 0.1.13 bleibt unverändert; kein Firmwarebau erforderlich. Anschließende reine JPG-Wechsel benötigen keinen Neustart mehr.
+
+**Sofortlösung ohne Companionupdate:** Das neue Bild beispielsweise `conni_neu.jpg` nennen und in `/config/kidsplayer.yaml` den entsprechenden Eintrag auf `cover: conni_neu.jpg` ändern. Speichern und die Kachel nach etwa 30 Sekunden erneut prüfen. Dabei die vorhandene Bibliotheksstruktur beibehalten.
+
+Die automatische Erkennung betrifft eigene lokale Cover unter `cover_root`. Für `cover: auto` folgt die Bildadresse weiterhin den von Music Assistant gelieferten Informationen. Ein neu hinzugefügtes, gerade noch geschriebenes Bild sollte möglichst atomar an seinen Zielpfad verschoben werden, damit die Kachel keine unvollständige Datei lädt.

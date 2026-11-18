@@ -1,6 +1,6 @@
 # Tessera Kidsplayer 0.1.13
 
-Aktueller HA-Companion: **0.1.7** (Coverdownload-Korrektur, kein Firmwareupdate erforderlich). [**Fertiges HA-Installationsarchiv herunterladen**](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.7.zip).
+Aktueller HA-Companion: **0.1.8** (lokale Cover nach Dateiaustausch automatisch aktualisieren, kein Firmwareupdate erforderlich). [**Fertiges HA-Installationsarchiv herunterladen**](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.8.zip).
 
 Kindgerechte Hörspielbibliothek für Tessera und Music Assistant: Reihen und Folgen als verschachtelte Cover-Flows innerhalb einer Kachel. Explizite Tracklisten bleiben geordnet; jede Kachel hat ihre eigene Bibliotheks-ID und ihren eigenen Player.
 

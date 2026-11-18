@@ -208,3 +208,9 @@ python3 tools/test-icon-render.py /path/to/lvgl-v9.5.0 /tmp/kidsplayer-icon-rend
 ```
 
 Die vollständige Guition-Firmware wurde nicht gebaut oder installiert. Der reale Host-Renderer ist eine zusätzliche Prüfung, kein ESP32-Hardwaretest. Der tatsächliche Compilerstand des Displays wurde nicht erneut ausgelesen; der untersuchte ESPHome-Tag entspricht dem zuletzt bekannten installierten Builder. Das Symbol muss nach dem Update am Gerät bestätigt werden. Kein neues Bildformat vom Benutzer nötig; SVG, Maske und HA-Companion bleiben unverändert.
+
+## Cachekorrektur für lokale Cover, Companion 0.1.8
+
+45 Python-Tests erfolgreich, darunter vier neue Prüfungen für lokale Cover. Die tatsächliche Methode `Backend.cover` wird ausgeführt und liefert bei unveränderter YAML, gleichem Dateinamen, gleicher Dateigröße und absichtlich wiederhergestellter mtime nach einer Inhaltsänderung eine neue Bildadresse. Unveränderte Bildbytes behalten dieselbe Adresse über Zeitstempeländerung und simulierten Backend-Neustart hinweg. Weiter geprüft: Authentifizierter Bildpfad unter dem 48-Byte-Budget, korrekte lokale Registrierung, Leerdatei, fehlende Datei, Dateigröße über 2 MiB sowie Pfad-/Symlink-Ausbruch aus dem Coververzeichnis.
+
+Das neue HA-Installationsarchiv `downloads/kidsplayer-ha-companion-0.1.8.zip` wurde mit dem bestehenden Paketwerkzeug erzeugt und auf ZIP-Integrität sowie erforderliche Dateien einschließlich `manifest.json` geprüft. Displayplugin 0.1.13 bleibt unverändert; dessen offizieller Validator besteht weiterhin. Companion-Pythoncode kompiliert. Keine Änderungen an der laufenden HA-/Tessera-Konfiguration, keine Installation oder Neustarts durch den Agenten und kein Live-Test eines Dateiaustauschs am Display.

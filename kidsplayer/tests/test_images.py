@@ -3,7 +3,11 @@ import asyncio
 import ast
 import base64
 import importlib.util
+import hashlib
+import os
 from pathlib import Path
+from collections import OrderedDict
+import tempfile
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import Mock
@@ -24,6 +28,60 @@ class Chunked:
             yield chunk
 
 class ImageTests(unittest.IsolatedAsyncioTestCase):
+    async def test_local_replacement_changes_actual_backend_url_without_yaml_changes(self):
+        source=ast.parse((ROOT/'backend/custom_components/kidsplayer/__init__.py').read_text())
+        backend=next(n for n in source.body if isinstance(n,ast.ClassDef) and n.name=='Backend')
+        method=next(n for n in backend.body if isinstance(n,ast.AsyncFunctionDef) and n.name=='cover')
+        scope={'hashlib':hashlib,'local_cover_source':images.local_cover_source}
+        exec(compile(ast.Module(body=[method],type_ignores=[]), '<Backend.cover>', 'exec'),scope)
+        async def executor(fn,*args): return fn(*args)
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'cover.jpg';path.write_bytes(b'old-cover')
+            saved=path.stat()
+            fixture=NS(root=Path(folder),digest='same-yaml-revision',covers=OrderedDict(),
+                       hass=NS(async_add_executor_job=executor))
+            item=NS(cover='cover.jpg')
+            old=await scope['cover'](fixture,item,None,None)
+            self.assertEqual(await scope['cover'](fixture,item,None,None),old)
+            path.write_bytes(b'new-cover') # same filename and byte length
+            os.utime(path,ns=(saved.st_atime_ns,saved.st_mtime_ns)) # copied timestamps too
+            new=await scope['cover'](fixture,item,None,None)
+            self.assertNotEqual(new,old)
+            self.assertLessEqual(len(new.encode()),48)
+            self.assertEqual(fixture.covers[new.rsplit('kp_',1)[1]],(str(path.resolve()),False))
+            # A HA restart with identical source bytes should not redownload artwork.
+            fixture.covers=OrderedDict()
+            self.assertEqual(await scope['cover'](fixture,item,None,None),new)
+
+    async def test_local_digest_follows_bytes_not_timestamps(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'cover.jpg';path.write_bytes(PNG)
+            source,first=images.local_cover_source(folder,'cover.jpg')
+            self.assertEqual(source,str(path.resolve()))
+            self.assertEqual(first,hashlib.sha256(PNG).hexdigest())
+            os.utime(path,ns=(1,1))
+            self.assertEqual(images.local_cover_source(folder,'cover.jpg')[1],first)
+
+    async def test_local_limits_empty_and_missing_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'cover.jpg';path.write_bytes(b'')
+            with self.assertRaisesRegex(images.CoverError,'Leere Coverdatei'):
+                images.local_cover_source(folder,'cover.jpg')
+            path.write_bytes(b'a'*(images.MAX_IMAGE_BYTES+1))
+            with self.assertRaisesRegex(images.CoverError,'2 MiB'):
+                images.local_cover_source(folder,'cover.jpg')
+            with self.assertRaises(FileNotFoundError):
+                images.local_cover_source(folder,'missing.jpg')
+
+    async def test_local_digest_rejects_paths_and_symlinks_outside_root(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)/'covers';root.mkdir()
+            outside=Path(folder)/'private.jpg';outside.write_bytes(b'not-a-cover')
+            (root/'link.jpg').symlink_to(outside)
+            for name in ('../private.jpg',str(outside),'link.jpg'):
+                with self.subTest(name=name), self.assertRaisesRegex(images.CoverError,'ausserhalb'):
+                    images.local_cover_source(root,name)
+
     async def test_complete_image_from_partial_network_buffers(self):
         stream=Chunked([PNG[:8],PNG[8:30],PNG[30:]])
         self.assertNotEqual(await stream.read(images.MAX_IMAGE_BYTES+1),PNG) # old code truncates
