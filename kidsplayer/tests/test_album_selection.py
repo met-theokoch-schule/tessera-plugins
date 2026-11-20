@@ -70,7 +70,7 @@ class AlbumPlaybackTests(unittest.IsolatedAsyncioTestCase):
             get_item_by_uri=AsyncMock(return_value=NS(media_type='album', available=True,
                                                     item_id='test_album', provider='apple_music--test')),
             get_album_tracks=AsyncMock(return_value=tracks)),
-            player_queues=NS(get_active_queue=AsyncMock(return_value=NS(queue_id='queue')),
+            player_queues=NS(get=lambda player_id: NS(queue_id=player_id), get_active_queue=AsyncMock(),
                             repeat=AsyncMock(), autoplay=AsyncMock(), play_media=AsyncMock()))
 
     async def start(self, playback, tracks):

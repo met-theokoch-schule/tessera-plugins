@@ -7,7 +7,7 @@ import sys
 import types
 import unittest
 from types import SimpleNamespace as NS
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -105,7 +105,8 @@ class LibraryTests(unittest.TestCase):
 
 class PlaybackTests(unittest.IsolatedAsyncioTestCase):
     def client(self):
-        q = NS(get_active_queue=AsyncMock(return_value=NS(queue_id='queue')), repeat=AsyncMock(), autoplay=AsyncMock(), play_media=AsyncMock())
+        q = NS(get=Mock(return_value=NS(queue_id='player')), get_active_queue=AsyncMock(),
+               repeat=AsyncMock(), autoplay=AsyncMock(), play_media=AsyncMock())
         return NS(server_info=NS(schema_version=101), music=NS(get_item_by_uri=AsyncMock(), get_album_tracks=AsyncMock()), player_queues=q)
 
     def track(self, uri, disc=1, number=1, available=True):
@@ -122,8 +123,8 @@ class PlaybackTests(unittest.IsolatedAsyncioTestCase):
         self.assertIs(call['radio_mode'], False)
         self.assertEqual(call['user'], 'kind1')
         client.player_queues.play_media.assert_awaited_once()
-        client.player_queues.repeat.assert_awaited_once_with('queue', 'off', user='kind1')
-        client.player_queues.autoplay.assert_awaited_once_with('queue', False, user='kind1')
+        client.player_queues.repeat.assert_awaited_once_with('player', 'off', user='kind1')
+        client.player_queues.autoplay.assert_awaited_once_with('player', False, user='kind1')
 
     async def test_A_album_multidisc(self):
         client = self.client()

@@ -33,7 +33,7 @@ Kidsplayer nutzt deshalb als Alternative die [offiziellen MA-Clientmethoden](htt
 1. `music.get_item_by_uri(uri, user=...)` für jedes konfigurierte Objekt, ohne Titelsuche.
 2. Album bei Bedarf über `music.get_album_tracks(item_id, provider, user=...)` expandieren. Sortierung explizit `(disc_number, track_number)`; Mehrdeutigkeit oder fehlende Nummern sind Fehler.
 3. Verfügbarkeit aller ermittelten Tracks prüfen; Fehler vor Queueänderung zurückgeben.
-4. `player_queues.get_active_queue(player_id, user=...)`: unterstützt grundsätzlich aktive/Synchronisationsqueues, jedoch bisher nur durch Codeanalyse bestätigt.
+4. Ab Companion 0.1.10 `player_queues.get(player_id)`: die eigene, beim Verbindungsaufbau geladene Queue des ausgewählten Players verwenden und die Queue-ID mit der Player-ID vergleichen. `get_active_queue` wird beim Folgenstart nicht verwendet: Bei externer AirPlay-Quelle kann sie fehlen, bei Synchronisation kann sie auf einen anderen Player zeigen.
 5. `repeat(..., OFF)`, `autoplay(..., False)`; anschließend **ein** `play_media(media=alle_tracks, option=REPLACE, shuffle=False, radio_mode=False, user=...)`.
 
 Die Reihenfolge expliziter Listen wird nicht sortiert. Gemischte Anbieter sind durch die Listenschnittstelle möglich; die reale Abspielbarkeit richtet sich nach den installierten Providern. MA übernimmt Fortsetzung, Pause und Stop. Kidsplayer überwacht kein Trackende und besitzt keinen Wiederanlaufmechanismus. Ein verlorenes Play-Acknowledgement führt zum Hinweis „Player pruefen“, niemals zu automatischer Wiederholung.

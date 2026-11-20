@@ -19,6 +19,9 @@ class LegacyQueues:
     async def get_active_queue(self, player_id):
         return NS(queue_id='queue')
 
+    def get(self, queue_id):
+        return NS(queue_id=queue_id)
+
     async def set_repeat(self, queue_id, repeat_mode): pass
     async def set_autoplay(self, queue_id, enabled): pass
     async def play_media(self, queue_id, media, option=None, radio_mode=False, user=None):
@@ -40,8 +43,9 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(command.kwargs['user'],'kind1')
         self.assertIs(command.kwargs['shuffle'],False)
         self.assertIs(command.kwargs['radio_mode'],False)
-        client.player_queues.repeat.assert_awaited_once_with('queue','off')
-        client.player_queues.dont_stop_the_music.assert_awaited_once_with('queue',False)
+        self.assertEqual(command.kwargs['queue_id'],'player')
+        client.player_queues.repeat.assert_awaited_once_with('player','off')
+        client.player_queues.dont_stop_the_music.assert_awaited_once_with('player',False)
 
     async def test_new_client_on_legacy_server_does_not_impersonate_metadata(self):
         client=self.client()
@@ -75,7 +79,7 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
         def controller(filename,names):
             source=ast.parse((root/filename).read_text())
             cls=next(n for n in source.body if isinstance(n,ast.ClassDef))
-            methods=[n for n in cls.body if isinstance(n,ast.AsyncFunctionDef) and n.name in names]
+            methods=[n for n in cls.body if isinstance(n,(ast.FunctionDef,ast.AsyncFunctionDef)) and n.name in names]
             self.assertEqual(len(methods),len(names))
             for method in methods:
                 method.returns=None
@@ -86,7 +90,8 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
             return type('ActualClientController',(),{name:scope[name] for name in names})()
         client=self.client()
         client.music=controller('music.py',('get_item_by_uri','get_album_tracks'))
-        client.player_queues=controller('player_queues.py',('get_active_queue','repeat','dont_stop_the_music','play_media'))
+        client.player_queues=controller('player_queues.py',('get','repeat','dont_stop_the_music','play_media'))
+        client.player_queues._queues={'player':NS(queue_id='player')}
         client.music.client=client;client.player_queues.client=client
         calls=[]
         async def send(command,**kwargs):
@@ -99,10 +104,9 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
             if command=='music/albums/album_tracks':
                 return [dict(uri='apple_music--test://track/t%s'%n,media_type='track',available=True,
                              disc_number=1,track_number=n) for n in range(12,0,-1)]
-            if command=='player_queues/get_active_queue': return {'queue_id':'queue'}
         client.send_command=send
         await Playback().start(client,'player',NS(items=['apple_music://track/t5','apple_music://track/t6']),'kind1')
-        self.assertEqual([c for c,_ in calls],['music/item_by_uri','music/item_by_uri','player_queues/get_active_queue',
+        self.assertEqual([c for c,_ in calls],['music/item_by_uri','music/item_by_uri',
             'player_queues/repeat','player_queues/dont_stop_the_music','player_queues/play_media'])
         self.assertTrue(all('user' not in data for _,data in calls[:-1]))
         self.assertEqual(calls[-1][1]['user'],'kind1')
@@ -113,7 +117,7 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
         selection=NS(uri='apple_music--test://album/test_album',numbers=(5,6,7,8),disc=None)
         await Playback().start(client,'player',NS(items=(),album=selection),'kind1')
         self.assertEqual([c for c,_ in calls],['music/item_by_uri','music/albums/album_tracks',
-            'player_queues/get_active_queue','player_queues/repeat',
+            'player_queues/repeat',
             'player_queues/dont_stop_the_music','player_queues/play_media'])
         self.assertEqual(calls[1][1],dict(item_id='test_album',
             provider_instance_id_or_domain='apple_music--test',in_library_only=False))
@@ -123,6 +127,7 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(calls[-1][1]['option'],'replace')
         self.assertEqual(calls[-1][1]['user'],'kind1')
         self.assertIs(calls[-1][1]['shuffle'],False)
+        self.assertTrue(all(data.get('queue_id','player') == 'player' for _,data in calls))
 
 class ErrorTransportTests(unittest.IsolatedAsyncioTestCase):
     def scope(self):

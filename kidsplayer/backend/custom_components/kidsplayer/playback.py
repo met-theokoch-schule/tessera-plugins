@@ -84,9 +84,12 @@ class Playback:
                     raise ValueError('Track-URI fehlt; Auswahl nicht gestartet')
                 if not getattr(track, 'available', False):
                     raise ValueError('Track nicht verfuegbar: ' + track.uri)
-            queue = await contextual(client, client.player_queues.get_active_queue, player_id, user=user)
-            if queue is None:
-                raise ValueError('Keine aktive Music-Assistant-Queue')
+            # Start a new episode on the selected player's own queue. Its active
+            # source can be external AirPlay (no MA queue) or another player's
+            # queue; following that source would fail or redirect playback.
+            queue = client.player_queues.get(player_id)
+            if queue is None or queue.queue_id != player_id:
+                raise ValueError('Music-Assistant-Queue fuer den gewaehlten Player fehlt')
             # Import only at runtime, so the sequencing logic is testable without HA.
             from music_assistant_models.enums import QueueOption, RepeatMode
             await contextual(client, client.player_queues.repeat, queue.queue_id, RepeatMode.OFF, user=user)
