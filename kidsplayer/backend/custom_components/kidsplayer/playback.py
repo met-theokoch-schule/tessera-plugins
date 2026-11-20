@@ -2,6 +2,52 @@
 import asyncio
 from .compat import contextual, autoplay_off, replace_ordered
 
+def album_positions(tracks):
+    """Validate positions before sorting or selecting; never infer list offsets."""
+    if not tracks:
+        raise ValueError('Album hat keine Tracks')
+    if len(tracks) > 2048:
+        raise ValueError('Album hat mehr als 2048 Tracks')
+    result = []
+    for track in tracks:
+        disc = getattr(track, 'disc_number', None)
+        disc = 1 if disc is None or (type(disc) is int and disc == 0) else disc
+        number = getattr(track, 'track_number', None)
+        if type(disc) is not int or disc < 1 or type(number) is not int or number < 1:
+            raise ValueError('Album-Reihenfolge unklar; explizite Track-URIs verwenden')
+        result.append((disc, number, track))
+    return result
+
+def select_album_tracks(tracks, selection):
+    positions = album_positions(tracks)
+    discs = {disc for disc, _, _ in positions}
+    if selection.disc is None and len(discs) > 1:
+        raise ValueError('Album hat mehrere Discs; playback.disc angeben')
+    chosen_disc = selection.disc if selection.disc is not None else next(iter(discs))
+    if chosen_disc not in discs:
+        raise ValueError('Disc %s fehlt im Album' % chosen_disc)
+    by_number = {}
+    for disc, number, track in positions:
+        if disc != chosen_disc:
+            continue
+        if number in by_number:
+            raise ValueError('Tracknummer %s auf Disc %s ist mehrdeutig' % (number, disc))
+        by_number[number] = track
+    missing = [number for number in selection.numbers if number not in by_number]
+    if missing:
+        raise ValueError('Track %s fehlt auf Disc %s' % (missing[0], chosen_disc))
+    # An explicit number list preserves YAML order, even [8, 2, 5].
+    return [by_number[number] for number in selection.numbers]
+
+async def resolve_album_selection(client, selection, user=None):
+    album = await contextual(client, client.music.get_item_by_uri, selection.uri, user=user)
+    if str(album.media_type) != 'album':
+        raise ValueError('album_uri verweist nicht auf ein Album')
+    if not getattr(album, 'available', False):
+        raise ValueError('Album nicht verfuegbar: ' + selection.uri)
+    tracks = await contextual(client, client.music.get_album_tracks, album.item_id, album.provider, user=user)
+    return select_album_tracks(tracks, selection)
+
 class Playback:
     def __init__(self):
         self.locks = {}
@@ -10,7 +56,8 @@ class Playback:
         # Serialize all tiles targeting the same MA server/player.
         key = (id(client), player_id)
         async with self.locks.setdefault(key, asyncio.Lock()):
-            tracks = []
+            selection = getattr(episode, 'album', None)
+            tracks = await resolve_album_selection(client, selection, user) if selection else []
             for uri in episode.items:
                 item = await contextual(client, client.music.get_item_by_uri, uri, user=user)
                 if not getattr(item, 'available', False):
@@ -20,19 +67,22 @@ class Playback:
                     if not album:
                         raise ValueError('Album hat keine Tracks: ' + uri)
                     # Never let a server preference reorder a multi-disc album.
-                    album = sorted(album, key=lambda t: (t.disc_number or 1, t.track_number or 0))
-                    positions = [(t.disc_number or 1, t.track_number) for t in album]
-                    if any(not n for _, n in positions) or len(set(positions)) != len(positions):
+                    positions = album_positions(album)
+                    if len({(disc, number) for disc, number, _ in positions}) != len(positions):
                         raise ValueError('Album-Reihenfolge unklar; explizite Track-URIs verwenden')
-                    tracks.extend(album)
+                    tracks.extend(track for _, _, track in sorted(positions, key=lambda entry: entry[:2]))
                 elif str(item.media_type) == 'track':
                     tracks.append(item)
                 else:
                     raise ValueError('Nur Album und Track werden unterstuetzt')
+            if not tracks:
+                raise ValueError('Folge hat keine Tracks')
             if len(tracks) > 2048:
                 raise ValueError('Folge hat mehr als 2048 Tracks')
             for track in tracks:
-                if not track.available:
+                if not getattr(track, 'uri', ''):
+                    raise ValueError('Track-URI fehlt; Auswahl nicht gestartet')
+                if not getattr(track, 'available', False):
                     raise ValueError('Track nicht verfuegbar: ' + track.uri)
             queue = await contextual(client, client.player_queues.get_active_queue, player_id, user=user)
             if queue is None:

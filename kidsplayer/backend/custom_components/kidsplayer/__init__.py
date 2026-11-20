@@ -63,7 +63,7 @@ class Backend:
     async def cover(self, item, lib, client):
         if item.cover == 'auto':
             ep = item.episodes[0] if hasattr(item, 'episodes') else item
-            media = await contextual(client, client.music.get_item_by_uri, ep.items[0], user=lib.user or None)
+            media = await contextual(client, client.music.get_item_by_uri, ep.first_uri, user=lib.user or None)
             source = client.get_media_item_image_url(media)
             if not source:
                 return ''

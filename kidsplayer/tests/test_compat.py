@@ -92,13 +92,35 @@ class CompatTests(unittest.IsolatedAsyncioTestCase):
         async def send(command,**kwargs):
             calls.append((command,kwargs))
             if command=='music/item_by_uri':
+                if '/album/' in kwargs['uri']:
+                    return dict(uri=kwargs['uri'],media_type='album',available=True,
+                                item_id='test_album',provider='apple_music--test')
                 return dict(uri=kwargs['uri'],media_type='track',available=True)
+            if command=='music/albums/album_tracks':
+                return [dict(uri='apple_music--test://track/t%s'%n,media_type='track',available=True,
+                             disc_number=1,track_number=n) for n in range(12,0,-1)]
             if command=='player_queues/get_active_queue': return {'queue_id':'queue'}
         client.send_command=send
         await Playback().start(client,'player',NS(items=['apple_music://track/t5','apple_music://track/t6']),'kind1')
         self.assertEqual([c for c,_ in calls],['music/item_by_uri','music/item_by_uri','player_queues/get_active_queue',
             'player_queues/repeat','player_queues/dont_stop_the_music','player_queues/play_media'])
         self.assertTrue(all('user' not in data for _,data in calls[:-1]))
+        self.assertEqual(calls[-1][1]['user'],'kind1')
+        self.assertIs(calls[-1][1]['shuffle'],False)
+        # The new number range uses the same actual 1.6 metadata wrappers and
+        # sends exactly the selected tracks in one schema-65 replacement.
+        calls.clear()
+        selection=NS(uri='apple_music--test://album/test_album',numbers=(5,6,7,8),disc=None)
+        await Playback().start(client,'player',NS(items=(),album=selection),'kind1')
+        self.assertEqual([c for c,_ in calls],['music/item_by_uri','music/albums/album_tracks',
+            'player_queues/get_active_queue','player_queues/repeat',
+            'player_queues/dont_stop_the_music','player_queues/play_media'])
+        self.assertEqual(calls[1][1],dict(item_id='test_album',
+            provider_instance_id_or_domain='apple_music--test',in_library_only=False))
+        self.assertTrue(all('user' not in data for _,data in calls[:-1]))
+        self.assertEqual([t.uri for t in calls[-1][1]['media']],
+            ['apple_music--test://track/t%s'%n for n in (5,6,7,8)])
+        self.assertEqual(calls[-1][1]['option'],'replace')
         self.assertEqual(calls[-1][1]['user'],'kind1')
         self.assertIs(calls[-1][1]['shuffle'],False)
 

@@ -1,0 +1,54 @@
+# BEISPIEL: Alle PLACEHOLDER-URIs durch die echten Music-Assistant-URIs ersetzen.
+# Erst mit HA-Companion >= 0.1.9 verwendbar. Kein Firmware-Neubau notwendig.
+libraries:
+  kinderzimmer_1:
+    version: 1
+    player: media_player.kinderzimmer_1
+    categories:
+      - id: sammelalbum
+        title: Drei Folgen aus einem Album
+        cover: auto
+        episodes:
+          - id: folge_1
+            title: Folge 1
+            cover: auto
+            playback:
+              album_uri: "apple_music://album/PLACEHOLDER_ALBUM_ID"
+              track_range:
+                start: 1
+                end: 4
+          - id: folge_2
+            title: Folge 2
+            cover: auto
+            playback:
+              album_uri: "apple_music://album/PLACEHOLDER_ALBUM_ID"
+              track_range:
+                start: 5
+                end: 8
+          - id: folge_3
+            title: Folge 3
+            cover: auto
+            playback:
+              album_uri: "apple_music://album/PLACEHOLDER_ALBUM_ID"
+              track_range:
+                start: 9
+                end: 12
+          - id: einzelne_tracks
+            title: Einzelne Kapitel
+            cover: auto
+            playback:
+              album_uri: "apple_music://album/PLACEHOLDER_ALBUM_ID"
+              tracks: [2, 5, 8]
+      - id: mehrere_discs
+        title: Beispiel mit zwei Discs
+        cover: auto
+        episodes:
+          - id: disc_2
+            title: Disc 2, Kapitel 1 bis 3
+            cover: auto
+            playback:
+              album_uri: "library://album/PLACEHOLDER_MULTIDISC_ALBUM_ID"
+              disc: 2
+              track_range:
+                start: 1
+                end: 3

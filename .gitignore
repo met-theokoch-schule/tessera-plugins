@@ -10,3 +10,4 @@ secrets.yaml
 *.m4a
 *.flac
 *.bundle
+.DS_Store

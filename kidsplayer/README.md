@@ -1,6 +1,6 @@
 # Kidsplayer 0.1.13
 
-Aktueller Home-Assistant-Companion: **0.1.8**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.8.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
+Aktueller Home-Assistant-Companion: **0.1.9**. [Fertiges HA-Installationsarchiv](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.9.zip). Plugin- und Companionversion werden getrennt geführt; diese Korrektur ändert nur den Companion.
 
 Kidsplayer zeigt Hörspielreihen und deren Folgen innerhalb derselben Tessera-Kachel. Seitlich tippen blättert; das mittlere Cover öffnet eine Reihe oder startet eine Folge. Oben führt ein runder Pfeil nach links zur Reihenebene. Die Überschrift der Reihenebene lässt sich pro Kachel unter **Überschrift** ändern (Standard: `Reihen`, maximal 64 Zeichen). Die Tessera-Seite bleibt erhalten. Bis zu sieben Coverplätze verwenden New music's Anordnungsschleife unverändert, mit Perspektive und überlappenden äußeren Nachbarn. Ab 0.1.5 wechseln sie ohne Slide direkt in den neuen Endzustand. Größere Kacheln zeigen eine auslaufende Spiegelung unter den vollständig sichtbaren Covern; niedrige Kacheln sparen diese aus. Bildübertragung und Cache übernimmt Tessera.
 
@@ -82,6 +82,30 @@ Ein komplettes Album steht als einzelnes `playback.items`-Objekt mit seiner Albu
 
 Für ein Album mit zwölf Tracks legst du drei eigenständige Folgen an: Folge 1 mit den vier Track-URIs 1–4, Folge 2 mit 5–8, Folge 3 mit 9–12. Die Reihenfolge in YAML ist die Wiedergabereihenfolge; explizite Tracklisten werden niemals nach Tracknummer umsortiert. **Keine Album-URI zusätzlich in die Trackgruppe aufnehmen**, sonst gehört das gesamte Album zur Folge.
 
+Ab **HA-Companion 0.1.9** geht das auch ohne einzelne Track-URIs:
+
+```yaml
+playback:
+  album_uri: "apple_music://album/PLACEHOLDER_ALBUM_ID"
+  track_range:
+    start: 5
+    end: 8
+```
+
+`start` und `end` sind inklusive: Es werden genau die Tracks 5, 6, 7 und 8 des angegebenen Albums eingeplant. Die Album-ID ist ein zu ersetzender Platzhalter; die vollständige URI aus deinem MA-Server verwenden. Für einzelne Tracknummern:
+
+```yaml
+playback:
+  album_uri: "apple_music://album/PLACEHOLDER_ALBUM_ID"
+  tracks: [2, 5, 8]
+```
+
+Die Wiedergabe folgt genau der Listenreihenfolge, auch bei `[8, 2, 5]`. Bei mehreren Discs zusätzlich `disc: 1` oder `disc: 2` **direkt unter `playback`** angeben; Nummern gelten dann innerhalb dieser Disc. Ohne Discangabe wird ein Album mit mehreren Discs vor dem Start abgewiesen. Fehlende oder doppelte Tracknummern und nicht verfügbare ausgewählte Tracks führen zum Fehler, bevor die bisherige Queue verändert wird. Ein nicht ausgewählter, nicht verfügbarer Track blockiert die Folge nicht.
+
+Die Nummern stammen aus den MA-Metadaten (`track_number`, `disc_number`), nicht aus der Reihenfolge der API-Antwort. Bei jedem Start wird die aktuelle Trackliste erneut aufgelöst. Wenn ein Anbieter die Nummerierung ändert, bezieht sich die Auswahl auf dessen aktuelle Nummern; für dauerhaft an konkrete Track-IDs gebundene Folgen weiterhin `items` verwenden. Unbekannte/fehlende Nummern werden nicht geraten. Fehlende bzw. null Discnummern werden wie in der bisherigen Albumwiedergabe als Disc 1 behandelt.
+
+Pro Auswahl sind 1–256 Tracks erlaubt, Track-/Discnummern sind positive ganze Zahlen bis 9999. Eine einzelne Nummer lässt sich mit `tracks: [5]` oder `start: 5, end: 5` wählen. **`items` weglassen:** `album_uri` wird mit genau einem von `tracks` oder `track_range` kombiniert. Beide Auswahlarten zusammen oder `album_uri` ohne Auswahl sind absichtlich ungültig, damit nicht versehentlich das ganze Album startet. Ganze Alben bleiben Einträge unter `items`. Automatische Cover verwenden das Albumcover. Ein vollständiges Beispiel steht in [examples/album_tracks.yaml](examples/album_tracks.yaml).
+
 Eine Liste kann einzelne Tracks unterschiedlicher Anbieter und Album-URIs enthalten. Die Albumtracks werden an der jeweiligen Listenposition eingesetzt. Apple Music und lokale Medien funktionieren über denselben MA-Player, sofern MA beide Anbieter abspielen kann.
 
 Kidsplayer prüft alle Einträge vor einer Queueänderung. Danach schaltet es Repeat und Autoplay aus und übergibt alle aufgelösten Tracks mit `replace`, `shuffle=false`, `radio_mode=false` in **einem** Wiedergabeaufruf. Der Start einer neuen Folge ersetzt die vorherige Queue. Danach übernimmt MA die normale Trackfortsetzung. Es gibt weder Track-Ende-Callbacks noch automatisches Fortsetzen nach Pause/Stop durch Kidsplayer. Ein Wiedergabetimeout wird nicht automatisch wiederholt.
@@ -126,7 +150,7 @@ Optional wird `music_assistant_user: kind1` als `user` für die Wiedergabe an MA
 - Änderungen werden nicht übernommen: Datei vollständig speichern, 30 Sekunden warten oder nach einem Fehler erneut tippen. Gelöschte Kategorie mit „Zurueck“ verlassen.
 - Fehler nach Start, Provider-Fallback, Gruppen-/Syncplayer, echte Streamverfügbarkeit und Benutzerfortschritt sind bislang nicht am echten Server geprüft. Keine Aussage über eine bereits erfolgte Hardwareabnahme.
 - Keine vollständige grafische Vorschau der verschachtelten Bibliothek im Tessera-Editor, keine Swipe-Gesten, kein persistenter Navigationszustand und keine Bibliotheks-YAML im Inspector. Firmwaretexte sind momentan deutsch in ASCII-Schreibweise.
-- Album-Tracknummern (`album_uri`, `tracks`, `track_range`) sind **noch nicht implementiert** und werden als unbekannte Felder abgewiesen. Die MA-Albumtrack-API liefert die notwendigen URIs und Disc-/Tracknummern; eine spätere Erweiterung muss Disc explizit behandeln, fehlende Nummern verweigern und Metadatenänderungen berücksichtigen.
+- Album-Tracknummern (`album_uri`, `tracks`, `track_range`) benötigen **HA-Companion mindestens 0.1.9**. Bei mehreren Discs ist `disc` erforderlich. Auswahl nur an Trackgrenzen; Start-/Endzeiten innerhalb einer Audiodatei bleiben außerhalb des Funktionsumfangs.
 
 ## Privacy
 
@@ -335,3 +359,11 @@ Bis Companion 0.1.7 wurde die Bildadresse nur aus Bibliotheks-YAML und Quellpfad
 **Sofortlösung ohne Companionupdate:** Das neue Bild beispielsweise `conni_neu.jpg` nennen und in `/config/kidsplayer.yaml` den entsprechenden Eintrag auf `cover: conni_neu.jpg` ändern. Speichern und die Kachel nach etwa 30 Sekunden erneut prüfen. Dabei die vorhandene Bibliotheksstruktur beibehalten.
 
 Die automatische Erkennung betrifft eigene lokale Cover unter `cover_root`. Für `cover: auto` folgt die Bildadresse weiterhin den von Music Assistant gelieferten Informationen. Ein neu hinzugefügtes, gerade noch geschriebenes Bild sollte möglichst atomar an seinen Zielpfad verschoben werden, damit die Kachel keine unvollständige Datei lädt.
+
+## Companion 0.1.9: Album-Trackbereiche und Nummernlisten
+
+Die oben beschriebene Kurzform mit `album_uri` und `track_range` bzw. `tracks` ist jetzt implementiert. Die Auswahl wird vollständig im HA-Backend zu den tatsächlichen Trackobjekten aufgelöst und anschließend über den unveränderten, einmaligen Queue-Ersetzungsaufruf gestartet. Kein Firmware-Neubau, keine zusätzliche Bibliotheksübertragung, keine Titelsuche und kein automatischer Wiedergabeneustart.
+
+**Update:** [HA-Companion 0.1.9 herunterladen](https://github.com/met-theokoch-schule/tessera-plugins/raw/refs/heads/main/downloads/kidsplayer-ha-companion-0.1.9.zip), nach `/config` entpacken, sodass alle Dateien unter `/config/custom_components/kidsplayer/` ersetzt werden, und Home Assistant einmal neu starten. Anschließend die gewünschten Folgen in `/config/kidsplayer.yaml` auf die neue Syntax umstellen. Displayplugin **0.1.13**, normale Medienkachel und Inspector-Einstellungen bleiben unverändert. Nach einer Bibliotheksänderung etwa 30 Sekunden warten; bei der bisherigen Meldung „Bibliothek geaendert“ die Auswahl neu laden.
+
+Zum Prüfen ein Album mit bekannten Tracknummern verwenden, Bereich 5–8 als eigene Folge starten und die MA-Queue ansehen: Sie darf nur diese vier Tracks in dieser Reihenfolge enthalten. Nach Track 8 darf Track 9 nicht folgen. Danach eine zweite Folge starten und prüfen, dass die Queue ersetzt wird. Eine absichtlich nicht existierende Nummer muss einen Fehler zeigen und die laufende Queue erhalten. Automatisierte Tests prüfen diese Abläufe mit MA-Mocks und den tatsächlichen Legacy-Clientmethoden; die Live-Wiedergabe ist nach der Installation zu bestätigen.

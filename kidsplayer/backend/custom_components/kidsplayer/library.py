@@ -1,6 +1,7 @@
 """Strict, bounded library model; contains no Home Assistant dependencies."""
 from dataclasses import dataclass
 import re
+from typing import Optional
 import yaml
 
 MAX_BYTES = 512 * 1024
@@ -51,12 +52,62 @@ def cover(value):
             raise ConfigError('Cover must be relative to cover_root')
     return value
 
+def media_uri(value, album_only=False):
+    value = text(value, 1024)
+    if not URI.fullmatch(value) or 'PLACEHOLDER' in value or '<' in value:
+        raise ConfigError('Use an exact Music Assistant album/track URI; replace placeholders')
+    if album_only and value.split('://', 1)[1].split('/', 1)[0] != 'album':
+        raise ConfigError('album_uri muss eine Album-URI sein')
+    return value
+
+def position(value):
+    if type(value) is not int or not 1 <= value <= 9999:
+        raise ConfigError('Track- und Discnummern muessen ganze Zahlen von 1 bis 9999 sein')
+    return value
+
+@dataclass(frozen=True)
+class AlbumSelection:
+    uri: str
+    numbers: tuple
+    disc: Optional[int] = None
+
+def playback_config(value):
+    playback = fields(value, ('items', 'album_uri', 'tracks', 'track_range', 'disc'))
+    if 'items' in playback:
+        if len(playback) != 1:
+            raise ConfigError('playback.items nicht mit album_uri oder Trackauswahl mischen')
+        uris = []
+        for item in entries(playback['items'], 256):
+            fields(item, ('uri',), ('uri',))
+            uris.append(media_uri(item['uri']))
+        return tuple(uris), None
+    if 'album_uri' not in playback or ('tracks' in playback) == ('track_range' in playback):
+        raise ConfigError('playback braucht items oder album_uri mit genau einer Auswahl: tracks oder track_range')
+    uri = media_uri(playback['album_uri'], album_only=True)
+    disc = position(playback['disc']) if 'disc' in playback else None
+    if 'tracks' in playback:
+        numbers = tuple(position(n) for n in entries(playback['tracks'], 256))
+        if len(set(numbers)) != len(numbers):
+            raise ConfigError('Tracknummern in tracks duerfen nicht doppelt vorkommen')
+    else:
+        interval = fields(playback['track_range'], ('start', 'end'), ('start', 'end'))
+        start, end = position(interval['start']), position(interval['end'])
+        if end < start or end - start + 1 > 256:
+            raise ConfigError('track_range braucht start <= end und hoechstens 256 Tracks')
+        numbers = tuple(range(start, end + 1))
+    return (), AlbumSelection(uri, numbers, disc)
+
 @dataclass(frozen=True)
 class Episode:
     id: str
     title: str
     cover: str
     items: tuple
+    album: Optional[AlbumSelection] = None
+
+    @property
+    def first_uri(self):
+        return self.album.uri if self.album else self.items[0]
 
 @dataclass(frozen=True)
 class Category:
@@ -116,15 +167,8 @@ def parse(source):
                 if eid in eids:
                     raise ConfigError('Duplicate episode ID')
                 eids.add(eid)
-                playback = fields(ep['playback'], ('items',), ('items',))
-                uris = []
-                for item in entries(playback['items'], 256):
-                    fields(item, ('uri',), ('uri',))
-                    uri = text(item['uri'], 1024)
-                    if not URI.fullmatch(uri) or 'PLACEHOLDER' in uri or '<' in uri:
-                        raise ConfigError('Use an exact Music Assistant album/track URI; replace placeholders')
-                    uris.append(uri)
-                episodes.append(Episode(eid, text(ep['title']), cover(ep.get('cover', 'auto')), tuple(uris)))
+                uris, album = playback_config(ep['playback'])
+                episodes.append(Episode(eid, text(ep['title']), cover(ep.get('cover', 'auto')), uris, album))
             categories.append(Category(cid, text(cat['title']), cover(cat.get('cover', 'auto')), tuple(episodes)))
         result[name] = Library(player, user, display.get('show_titles', True), display.get('animation', True), tuple(categories))
     return result
